@@ -23,6 +23,11 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.9.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -31,21 +36,16 @@
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "livekit-server-sdk": "^2.15.3",
+    "prisma": "^6.19.3",
     "redis": "^5.12.1",
     "resend": "^6.12.3",
     "socket.io": "^4.8.3",
     "stripe": "^22.1.1",
+    "typescript": "^6.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.9.1",
-    "prisma": "^6.19.3",
     "ts-node-dev": "^2.0.0",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "tsx": "^4.21.0"
   }
 }

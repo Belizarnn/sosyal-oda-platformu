@@ -51,7 +51,7 @@ npm run start
 Önerilen build command:
 
 ```bash
-npm install && npm run build && npx prisma generate
+npm install --include=dev && npm run build && npx prisma generate
 ```
 
 Start command:
