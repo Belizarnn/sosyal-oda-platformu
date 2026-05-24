@@ -197,6 +197,13 @@ Kod değişikliğini GitHub'a push edin → Vercel (frontend) ve Render (backend
 
 Local'de çalıştırmanız gerekmez; yalnızca kod yazıp `git push` yeterli.
 
+**LiveKit, Resend, demo seed kurulumu:** [`PRODUCTION_SETUP.md`](PRODUCTION_SETUP.md)
+
+```powershell
+.\check-production.ps1   # canlı ortam kontrolü
+.\seed-production.ps1      # demo hesaplar (bir kez)
+```
+
 ### Build (production test)
 
 ```bash

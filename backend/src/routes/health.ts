@@ -26,3 +26,40 @@ healthRouter.get("/db", async (_req, res) => {
     });
   }
 });
+
+healthRouter.get("/integrations", (_req, res) => {
+  const livekitConfigured = Boolean(
+    env.livekitUrl && env.livekitApiKey && env.livekitApiSecret,
+  );
+  const emailConfigured = Boolean(env.resendApiKey && env.emailFrom);
+  const stripeConfigured = Boolean(
+    env.stripeSecretKey && env.stripeWebhookSecret,
+  );
+
+  res.json({
+    status: "ok",
+    integrations: {
+      livekit: {
+        configured: livekitConfigured,
+        hint: livekitConfigured
+          ? null
+          : "Render env: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET",
+      },
+      email: {
+        configured: emailConfigured,
+        provider: env.emailProvider,
+        hint: emailConfigured
+          ? null
+          : "Render env: RESEND_API_KEY, EMAIL_FROM, APP_URL",
+      },
+      stripe: {
+        configured: stripeConfigured,
+        hint: stripeConfigured ? null : "Premium için Stripe env gerekli",
+      },
+      redis: {
+        enabled: env.enableRedis,
+        configured: !env.enableRedis || Boolean(env.redisUrl),
+      },
+    },
+  });
+});
