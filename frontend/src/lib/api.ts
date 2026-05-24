@@ -608,7 +608,6 @@ export interface UpdateProfileResponse {
 export function getUserProfile(handle: string): Promise<UserProfileResponse> {
   return apiRequest<UserProfileResponse>(`/users/${encodeURIComponent(handle)}`, {
     method: "GET",
-    token: null,
   });
 }
 
