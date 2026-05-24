@@ -33,6 +33,17 @@ healthRouter.get("/schema", async (_req, res) => {
       where: { isCommunityBacking: false },
       select: { id: true },
     });
+
+    await prisma.roomMediaState.findFirst({
+      select: {
+        id: true,
+        externalSeason: true,
+        externalEpisode: true,
+        externalStartOffsetMinutes: true,
+        externalNotes: true,
+      },
+    });
+
     res.json({ status: "ok", schema: "compatible" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Bilinmeyen hata";
