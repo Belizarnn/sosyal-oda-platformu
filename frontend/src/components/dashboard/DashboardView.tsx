@@ -2,40 +2,40 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ContinueRoomCard } from "@/components/dashboard/ContinueRoomCard";
-import { DashboardActionCards } from "@/components/dashboard/DashboardActionCards";
-import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
+import { DashboardSection } from "@/components/dashboard/DashboardSection";
+import { EnterInviteCodeModal } from "@/components/dashboard/EnterInviteCodeModal";
 import { FriendsInRooms } from "@/components/dashboard/FriendsInRooms";
-import { PresenceCard } from "@/components/dashboard/PresenceCard";
 import { RecentNotificationsCard } from "@/components/dashboard/RecentNotificationsCard";
 import { RecommendedRooms } from "@/components/dashboard/RecommendedRooms";
+import { CreateRoomModal } from "@/components/rooms/CreateRoomModal";
 import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
-import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
-import { SmartDashboardHero } from "@/components/dashboard/SmartDashboardHero";
-import { PresenceSelector } from "@/components/presence/PresenceSelector";
-import { StatusMessageEditor } from "@/components/presence/StatusMessageEditor";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import { ApiError, getDashboard, getFriendsActivity, startDirectConversation, type AuthUser } from "@/lib/api";
+import {
+  ApiError,
+  getDashboard,
+  getFriendsActivity,
+  startDirectConversation,
+  type AuthUser,
+} from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import type { DashboardResponse } from "@/types/dashboard";
 import type { FriendActivityItem } from "@/types/friend";
+import { ContinueRoomCard } from "@/components/dashboard/ContinueRoomCard";
 
 function DashboardSkeleton() {
   return (
-    <div className="mx-auto flex max-w-6xl animate-pulse flex-col gap-8">
-      <div className="h-36 rounded-2xl bg-surface" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mx-auto flex max-w-5xl animate-pulse flex-col gap-6">
+      <div className="h-8 w-48 rounded-lg bg-surface" />
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-40 rounded-2xl bg-surface" />
+          <div key={index} className="h-12 rounded-xl bg-surface" />
         ))}
       </div>
-      <div className="h-28 rounded-2xl bg-surface" />
+      <div className="h-24 rounded-xl bg-surface" />
     </div>
   );
 }
@@ -49,6 +49,8 @@ export function DashboardView() {
   const [friendsActivity, setFriendsActivity] = useState<FriendActivityItem[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -112,17 +114,23 @@ export function DashboardView() {
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8">
-      <SmartDashboardHero user={localUser} />
+    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold sm:text-2xl">
+          {t("dashboard.welcome", { name: localUser.username })}
+        </h1>
+        <p className="text-sm text-muted">{t("dashboard.subtitle")}</p>
+      </header>
 
-      <EmailVerificationBanner
-        user={localUser}
-        onUserUpdated={handleUserUpdated}
-      />
+      <EmailVerificationBanner user={localUser} onUserUpdated={handleUserUpdated} />
 
-      <PwaInstallCard />
-
-      <DashboardActionCards />
+      <DashboardSection title={t("dashboard.quickActions.label")}>
+        <DashboardQuickActions
+          continueRoom={dashboard?.continueRoom ?? null}
+          onCreateRoom={() => setCreateOpen(true)}
+          onEnterInviteCode={() => setInviteOpen(true)}
+        />
+      </DashboardSection>
 
       {dashboardError ? (
         <ErrorState
@@ -136,50 +144,29 @@ export function DashboardView() {
         <LoadingState label={t("states.loading.dashboard")} rows={2} />
       ) : dashboard ? (
         <>
-          <DashboardStats stats={dashboard.quickStats} />
           <ContinueRoomCard room={dashboard.continueRoom} />
-          <RecommendedRooms rooms={dashboard.recommendedRooms} />
+
           <FriendsInRooms
             friends={friendsActivity}
             onMessage={(userId) => void handleFriendMessage(userId)}
           />
 
-          <section className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">{t("dashboard.onlineFriends")}</h2>
-              <Button variant="ghost" href="/friends" size="sm">
-                {t("dashboard.actions.findFriends.button")}
-              </Button>
-            </div>
-            {dashboard.onlineFriends.length === 0 ? (
-              <EmptyState
-                icon="♡"
-                title={t("states.empty.noFriendsOnline")}
-                description={t("states.empty.noFriendsOnlineDesc")}
-                actionLabel={t("dashboard.actions.findFriends.button")}
-                href="/friends"
-                className="py-8"
-              />
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {dashboard.onlineFriends.map((friend) => (
-                  <PresenceCard key={friend.id} friend={friend} />
-                ))}
-              </div>
-            )}
-          </section>
+          <RecommendedRooms rooms={dashboard.recommendedRooms} variant="active" />
 
           <RecentNotificationsCard notifications={dashboard.recentNotifications} />
         </>
       ) : null}
 
-      <Card className="space-y-4 border-border/80 bg-surface/40 p-5">
-        <h2 className="text-sm font-semibold text-muted">{t("dashboard.updatePresence")}</h2>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <PresenceSelector user={localUser} onUpdated={handleUserUpdated} />
-          <StatusMessageEditor user={localUser} onUpdated={handleUserUpdated} />
-        </div>
-      </Card>
+      <CreateRoomModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(room) => {
+          setCreateOpen(false);
+          router.push(`/rooms/${room.id}`);
+        }}
+      />
+
+      <EnterInviteCodeModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
     </div>
   );
 }

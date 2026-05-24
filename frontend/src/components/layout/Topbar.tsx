@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { LanguageSelect } from "@/components/ui/LanguageSelect";
 import { PresenceDot } from "@/components/presence/PresenceDot";
-import { Input } from "@/components/ui/Input";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useVoice } from "@/contexts/VoiceContext";
-import { getPresenceLabel, getPresenceMeta } from "@/lib/presence";
+import { getPresenceLabel } from "@/lib/presence";
 import { cn } from "@/lib/cn";
 import { isAdminPanelRole } from "@/types/admin";
 
@@ -42,11 +42,11 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-topbar px-4 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-topbar px-4 sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
-        className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-border bg-surface p-2.5 text-muted transition hover:bg-surface-hover hover:text-foreground lg:hidden"
+        className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-border bg-surface p-2 text-muted transition hover:bg-surface-hover hover:text-foreground lg:hidden"
         aria-label={t("nav.openMenu")}
       >
         <svg
@@ -56,23 +56,16 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           stroke="currentColor"
           strokeWidth={1.5}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 6h16M4 12h16M4 18h16"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
 
-      <div className="hidden min-w-0 flex-1 sm:block">
-        <Input
-          placeholder={t("common.searchPlaceholder")}
-          aria-label={t("common.searchAria")}
-          className="max-w-md"
-        />
-      </div>
+      <Link href="/dashboard" className="min-w-0 truncate text-sm font-semibold sm:text-base">
+        {t("common.brandName")}
+      </Link>
 
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
+      <div className="ml-auto flex items-center gap-2">
+        <LanguageSelect className="hidden sm:block" />
         <ThemeToggle />
         <NotificationBell />
 
@@ -81,7 +74,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex items-center gap-2 rounded-2xl border border-border bg-surface py-1.5 pl-1.5 pr-3 transition hover:bg-surface-hover"
+              className="flex items-center gap-2 rounded-xl border border-border bg-surface py-1.5 pl-1.5 pr-2 transition hover:bg-surface-hover"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
             >
@@ -91,12 +84,10 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                   <PresenceDot status={user.presenceStatus} className="h-2 w-2" />
                 </span>
               </div>
-              <div className="hidden min-w-0 sm:block text-left">
-                <p className="truncate text-sm font-medium leading-tight">
-                  {user.username}
-                </p>
+              <div className="hidden min-w-0 text-left sm:block">
+                <p className="truncate text-sm font-medium leading-tight">{user.username}</p>
                 <p className="truncate text-xs text-muted">
-                  @{user.handle} · {getPresenceLabel(user.presenceStatus, t)}
+                  {getPresenceLabel(user.presenceStatus, t)}
                 </p>
               </div>
             </button>

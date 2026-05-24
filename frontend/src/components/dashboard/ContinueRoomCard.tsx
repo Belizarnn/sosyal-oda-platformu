@@ -16,9 +16,9 @@ export function ContinueRoomCard({ room }: ContinueRoomCardProps) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold">{t("dashboard.continue.title")}</h2>
+      <h2 className="text-base font-semibold">{t("dashboard.continue.title")}</h2>
       {room ? (
-        <Card glow className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant="accent">{getCategoryLabel(room.category, t)}</Badge>

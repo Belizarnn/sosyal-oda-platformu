@@ -719,5 +719,14 @@
   "friends.mutualFriendsCount": "{count} mutual friends",
   "friends.mutualFriendsEmpty": "No mutual friends",
   "friends.mutualFriendsMore": "+{count} more",
-  "friends.socialLoadFailed": "Could not load social info"
+  "friends.socialLoadFailed": "Could not load social info",
+  "dashboard.subtitle": "Create a room, join one, or continue where you left off.",
+  "dashboard.quickActions.enterInviteCode": "Enter Invite Code",
+  "dashboard.quickActions.continueRoom": "Continue Last Room",
+  "dashboard.inviteCode.title": "Join with invite code",
+  "dashboard.inviteCode.desc": "Enter the code from your friend to join their room.",
+  "dashboard.inviteCode.label": "Invite code",
+  "dashboard.inviteCode.placeholder": "e.g. ABC123",
+  "dashboard.inviteCode.submit": "Go to room",
+  "rooms.backToList": "Room list"
 }

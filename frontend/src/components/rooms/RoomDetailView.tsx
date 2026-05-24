@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { RoomControlBar } from "@/components/rooms/detail/RoomControlBar";
 import { RoomHeader } from "@/components/rooms/detail/RoomHeader";
 import { RoomInfoPanel } from "@/components/rooms/detail/RoomInfoPanel";
 import { RoomJoinGate } from "@/components/rooms/detail/RoomJoinGate";
 import { RoomMembersPanel } from "@/components/rooms/detail/RoomMembersPanel";
-import { RoomTabs, type RoomTabId } from "@/components/rooms/detail/RoomTabs";
-import { VoicePanel } from "@/components/voice/VoicePanel";
+import { RoomVoiceStrip } from "@/components/rooms/detail/RoomVoiceStrip";
 import { WatchPartyPanel } from "@/components/watch/WatchPartyPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoomSocket } from "@/hooks/useRoomSocket";
@@ -30,6 +30,8 @@ interface RoomDetailViewProps {
   roomId: string;
   inviteCodeFromUrl?: string;
 }
+
+type RoomPanelId = "watch" | "members" | "info";
 
 async function syncRoomPresence(
   roomName: string,
@@ -56,7 +58,7 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
-  const [activeTab, setActiveTab] = useState<RoomTabId>("chat");
+  const [activePanel, setActivePanel] = useState<RoomPanelId>("watch");
   const [inviteSettings, setInviteSettings] = useState<InviteSettings | null>(null);
   const presenceSyncedRef = useRef<string | null>(null);
 
@@ -130,7 +132,7 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
       });
       setData(response);
       setPassword("");
-      setActiveTab("chat");
+      setActivePanel("watch");
       await syncRoomPresence(response.room.name, (updatedUser) => setUser(updatedUser));
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : t("rooms.joinFailed"));
@@ -172,24 +174,23 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
   }
 
   useEffect(() => {
-    if (activeTab === "watch") {
+    if (activePanel === "watch" && data?.isMember) {
       trackEvent("watch_party_opened", { roomId });
     }
-  }, [activeTab, roomId]);
+  }, [activePanel, data?.isMember, roomId]);
 
   if (loading) {
     return (
-      <div className="mx-auto flex app-panel-height max-w-6xl animate-pulse flex-col gap-4">
-        <div className="h-40 rounded-2xl bg-surface" />
-        <div className="h-12 rounded-2xl bg-surface" />
-        <div className="min-h-0 flex-1 rounded-2xl bg-surface" />
+      <div className="mx-auto flex app-panel-height max-w-6xl animate-pulse flex-col gap-3">
+        <div className="h-16 rounded-xl bg-surface" />
+        <div className="min-h-0 flex-1 rounded-xl bg-surface" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="mx-auto max-w-3xl rounded-2xl border border-red-500/30 bg-red-500/10 p-8 text-center text-red-200">
+      <div className="mx-auto max-w-3xl rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center text-red-200">
         {error ?? t("rooms.notFound")}
       </div>
     );
@@ -199,58 +200,69 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
   const currentUserMember = members.find((member) => member.userId === user?.id) ?? null;
 
   return (
-    <div className="mx-auto flex app-panel-height max-w-6xl flex-col gap-3 sm:gap-4">
-      <RoomHeader
-        data={data}
-        inviteSettings={inviteSettings}
-        requiresInviteForJoin={requiresInviteForJoin}
-        actionLoading={actionLoading}
-        actionError={isMember ? actionError : null}
-        onJoin={() => void handleJoin()}
-        onLeave={() => void handleLeave()}
-      />
-
+    <div className="mx-auto flex app-panel-height max-w-6xl flex-col gap-3">
       {!isMember ? (
-        <RoomJoinGate
-          roomName={data.room.name}
-          roomType={data.room.type}
-          requiresInviteForJoin={requiresInviteForJoin}
-          password={password}
-          onPasswordChange={setPassword}
-          actionLoading={actionLoading}
-          actionError={actionError}
-          onJoin={() => void handleJoin()}
-        />
+        <>
+          <RoomHeader
+            data={data}
+            inviteSettings={inviteSettings}
+            requiresInviteForJoin={requiresInviteForJoin}
+            actionLoading={actionLoading}
+            actionError={actionError}
+            onJoin={() => void handleJoin()}
+            onLeave={() => void handleLeave()}
+          />
+          <RoomJoinGate
+            roomName={data.room.name}
+            roomType={data.room.type}
+            requiresInviteForJoin={requiresInviteForJoin}
+            password={password}
+            onPasswordChange={setPassword}
+            actionLoading={actionLoading}
+            actionError={actionError}
+            onJoin={() => void handleJoin()}
+          />
+        </>
       ) : (
         <>
-          <RoomTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <RoomControlBar
+            roomId={roomId}
+            roomName={data.room.name}
+            memberCount={data.room.currentUserCount}
+            maxMembers={data.room.maxUserCount}
+            inviteSettings={inviteSettings}
+            canManageInvite={data.canManageInvite}
+            isMember={isMember}
+            actionLoading={actionLoading}
+            onLeave={() => void handleLeave()}
+            activePanel={activePanel}
+            onPanelChange={setActivePanel}
+          />
 
-          <div className="min-h-0 flex-1">
-            {activeTab === "chat" ? (
-              <ChatPanel
-                roomId={roomId}
-                isMember={isMember}
-                currentUserId={user?.id}
-                currentUserRole={currentUserRole}
-                members={members}
-                socket={socket}
-              />
-            ) : null}
+          {actionError ? (
+            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              {actionError}
+            </p>
+          ) : null}
 
-            {activeTab === "voice" ? (
-              <div className="h-full min-h-[280px] sm:min-h-[360px]">
-                <VoicePanel
-                  roomId={roomId}
-                  roomName={data.room.name}
-                  isMember={isMember}
-                  startMicMuted={Boolean(currentUserMember?.isMuted)}
-                />
+          {activePanel === "watch" ? (
+            <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
+              <div className="flex min-h-[240px] min-w-0 flex-1 flex-col">
+                <div className="min-h-[220px] flex-1 overflow-hidden rounded-xl border border-border bg-surface">
+                  <WatchPartyPanel
+                    roomId={roomId}
+                    isMember={isMember}
+                    currentUserId={user?.id}
+                    currentUserRole={currentUserRole}
+                    members={members}
+                    socket={socket}
+                  />
+                </div>
+                <RoomVoiceStrip roomId={roomId} />
               </div>
-            ) : null}
 
-            {activeTab === "watch" ? (
-              <div className="h-full min-h-[280px] overflow-hidden sm:min-h-[360px]">
-                <WatchPartyPanel
+              <div className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface lg:h-auto lg:w-80 lg:shrink-0">
+                <ChatPanel
                   roomId={roomId}
                   isMember={isMember}
                   currentUserId={user?.id}
@@ -259,9 +271,11 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
                   socket={socket}
                 />
               </div>
-            ) : null}
+            </div>
+          ) : null}
 
-            {activeTab === "members" ? (
+          {activePanel === "members" ? (
+            <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-surface">
               <RoomMembersPanel
                 roomId={roomId}
                 members={members}
@@ -269,16 +283,18 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
                 currentUserId={user?.id}
                 onUpdated={() => void loadRoom()}
               />
-            ) : null}
+            </div>
+          ) : null}
 
-            {activeTab === "info" ? (
+          {activePanel === "info" ? (
+            <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-surface p-4">
               <RoomInfoPanel
                 data={data}
                 inviteSettings={inviteSettings}
                 onInviteUpdated={handleInviteUpdated}
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </>
       )}
     </div>

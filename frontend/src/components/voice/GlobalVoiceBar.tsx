@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { VoiceControls } from "@/components/voice/VoiceControls";
 import { SpeakingIndicator } from "@/components/voice/SpeakingIndicator";
 import { useVoice } from "@/contexts/VoiceContext";
@@ -8,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/cn";
 
 export function GlobalVoiceBar() {
+  const pathname = usePathname();
   const { t } = useLanguage();
   const {
     isVoiceConnected,
@@ -29,6 +31,14 @@ export function GlobalVoiceBar() {
     return null;
   }
 
+  const isOnActiveRoomPage =
+    pathname === `/rooms/${currentVoiceRoomId}` ||
+    pathname.startsWith(`/rooms/${currentVoiceRoomId}/`);
+
+  if (isOnActiveRoomPage) {
+    return null;
+  }
+
   const speakingParticipants = participants.filter((participant) =>
     activeSpeakers.includes(participant.id),
   );
@@ -44,14 +54,12 @@ export function GlobalVoiceBar() {
     >
       <div
         className={cn(
-          "pointer-events-auto rounded-2xl border border-violet-400/20",
-          "bg-[rgba(15,23,42,0.88)] p-3 shadow-[0_12px_40px_rgba(15,23,42,0.45)] backdrop-blur-xl",
-          "ring-1 ring-violet-400/10",
+          "pointer-events-auto rounded-xl border border-border bg-surface p-3 shadow-[0_8px_24px_var(--shadow)]",
         )}
       >
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-violet-200/90">
+            <p className="text-xs font-medium text-muted">
               {t("voice.globalConnected")}
             </p>
             <Link
