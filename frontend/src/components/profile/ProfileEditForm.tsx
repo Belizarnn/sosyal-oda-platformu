@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { ProfileInterestEditor } from "@/components/profile/ProfileInterestEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -32,7 +33,7 @@ export function ProfileEditForm({
 }: ProfileEditFormProps) {
   const { t } = useLanguage();
   const [username, setUsername] = useState(initial.username);
-  const [avatarUrl, setAvatarUrl] = useState(initial.avatarUrl ?? "");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatarUrl);
   const [bannerUrl, setBannerUrl] = useState(initial.bannerUrl ?? "");
   const [bio, setBio] = useState(initial.bio ?? "");
   const [statusMessage, setStatusMessage] = useState(initial.statusMessage ?? "");
@@ -43,7 +44,7 @@ export function ProfileEditForm({
 
   useEffect(() => {
     setUsername(initial.username);
-    setAvatarUrl(initial.avatarUrl ?? "");
+    setAvatarUrl(initial.avatarUrl);
     setBannerUrl(initial.bannerUrl ?? "");
     setBio(initial.bio ?? "");
     setStatusMessage(initial.statusMessage ?? "");
@@ -58,7 +59,7 @@ export function ProfileEditForm({
 
     const payload: UpdateProfileInput = {
       username,
-      avatarUrl: avatarUrl.trim() || null,
+      avatarUrl,
       bannerUrl: bannerUrl.trim() || null,
       bio: bio.trim() || null,
       statusMessage: statusMessage.trim() || null,
@@ -79,18 +80,18 @@ export function ProfileEditForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <AvatarUploader
+        username={username}
+        value={avatarUrl}
+        onChange={setAvatarUrl}
+        disabled={loading}
+      />
+
       <Input
         label={t("profile.username")}
         value={username}
         onChange={(event) => setUsername(event.target.value)}
         maxLength={40}
-      />
-
-      <Input
-        label={t("profile.avatarUrl")}
-        value={avatarUrl}
-        onChange={(event) => setAvatarUrl(event.target.value)}
-        placeholder="https://..."
       />
 
       <Input

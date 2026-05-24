@@ -58,7 +58,39 @@ export function formatPublicProfile(
   };
 }
 
-function sanitizeOptionalUrl(
+function sanitizeAvatarUrl(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^data:image\/(jpeg|jpg|png|webp);base64,/i.test(trimmed)) {
+    if (trimmed.length > 600_000) {
+      throw new Error("Profil fotoğrafı çok büyük. Daha küçük bir görsel seç.");
+    }
+
+    return trimmed;
+  }
+
+  if (!/^https?:\/\//i.test(trimmed)) {
+    throw new Error("Geçerli bir fotoğraf URL'si veya yüklenmiş görsel kullanın.");
+  }
+
+  return trimmed;
+}
+
+function sanitizeBannerUrl(
   value: string | null | undefined,
 ): string | null | undefined {
   if (value === undefined) {
@@ -89,11 +121,11 @@ export function sanitizeProfileUrls(input: {
   const result: { avatarUrl?: string | null; bannerUrl?: string | null } = {};
 
   if (input.avatarUrl !== undefined) {
-    result.avatarUrl = sanitizeOptionalUrl(input.avatarUrl) ?? null;
+    result.avatarUrl = sanitizeAvatarUrl(input.avatarUrl) ?? null;
   }
 
   if (input.bannerUrl !== undefined) {
-    result.bannerUrl = sanitizeOptionalUrl(input.bannerUrl) ?? null;
+    result.bannerUrl = sanitizeBannerUrl(input.bannerUrl) ?? null;
   }
 
   return result;

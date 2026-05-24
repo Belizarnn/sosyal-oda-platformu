@@ -7,7 +7,7 @@ import type { UserProfile } from "@/types/user";
 import { PremiumBadge } from "@/components/premium/PremiumBadge";
 
 import { PremiumProfileFrame } from "@/components/premium/PremiumProfileFrame";
-
+import { ProfileAvatarEditor } from "@/components/profile/ProfileAvatarEditor";
 import { Avatar } from "@/components/ui/Avatar";
 
 import { Badge } from "@/components/ui/Badge";
@@ -21,29 +21,21 @@ import { getPresenceLabel } from "@/lib/presence";
 
 
 interface ProfileHeaderProps {
-
   user: UserProfile;
-
   isOwnProfile?: boolean;
-
   onEditClick?: () => void;
-
+  onAvatarUpdated?: (avatarUrl: string | null) => void;
   friendAction?: React.ReactNode;
-
 }
 
 
 
 export function ProfileHeader({
-
   user,
-
   isOwnProfile = false,
-
   onEditClick,
-
+  onAvatarUpdated,
   friendAction,
-
 }: ProfileHeaderProps) {
 
   const { t } = useLanguage();
@@ -107,25 +99,23 @@ export function ProfileHeader({
           <div className="relative inline-flex">
 
             <PremiumProfileFrame
-
               frame={user.isPremium ? user.premiumProfileFrame : null}
-
               effect={user.isPremium ? user.premiumAvatarEffect : null}
-
             >
-
-              <Avatar
-
-                name={user.username}
-
-                src={user.avatarUrl}
-
-                size="xl"
-
-                className="ring-4 ring-ring-offset"
-
-              />
-
+              {isOwnProfile && onAvatarUpdated ? (
+                <ProfileAvatarEditor
+                  username={user.username}
+                  avatarUrl={user.avatarUrl}
+                  onUpdated={(updatedUser) => onAvatarUpdated(updatedUser.avatarUrl)}
+                />
+              ) : (
+                <Avatar
+                  name={user.username}
+                  src={user.avatarUrl}
+                  size="xl"
+                  className="ring-4 ring-ring-offset"
+                />
+              )}
             </PremiumProfileFrame>
 
             {showPremiumBadge ? (

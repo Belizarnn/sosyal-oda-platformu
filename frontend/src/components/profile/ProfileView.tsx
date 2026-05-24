@@ -85,6 +85,14 @@ export function ProfileView({ handle }: ProfileViewProps) {
           user={profile}
           isOwnProfile={isOwnProfile}
           onEditClick={() => setEditOpen(true)}
+          onAvatarUpdated={(nextAvatarUrl) => {
+            setProfile((current) =>
+              current ? { ...current, avatarUrl: nextAvatarUrl } : current,
+            );
+            if (currentUser) {
+              setUser({ ...currentUser, avatarUrl: nextAvatarUrl });
+            }
+          }}
         />
 
         {!isOwnProfile && currentUser ? (
