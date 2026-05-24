@@ -19,6 +19,13 @@ import {
   validateExternalProviderInput,
 } from "../../utils/mediaParsers";
 import {
+  assertProviderAllowsMode,
+  getExternalSyncCommandMessageKey,
+  isExternalSyncMode,
+  type ExternalSyncCommandPayload,
+  type ExternalSyncCommandType,
+} from "../../utils/assistedExternalSync";
+import {
   normalizeYouTubeWatchUrl,
   parseYouTubeVideoId,
 } from "../../utils/parseYouTubeVideoId";
@@ -62,6 +69,10 @@ export type FormattedMediaState = {
   embedUrl: string | null;
   externalTitle: string | null;
   externalUrl: string | null;
+  externalSeason: number | null;
+  externalEpisode: number | null;
+  externalStartOffsetMinutes: number | null;
+  externalNotes: string | null;
   title: string | null;
   isPlaying: boolean;
   currentTime: number;
@@ -174,6 +185,10 @@ function formatMediaState(state: MediaStateWithHost): FormattedMediaState {
     embedUrl: state.embedUrl,
     externalTitle: state.externalTitle,
     externalUrl: state.externalUrl,
+    externalSeason: state.externalSeason,
+    externalEpisode: state.externalEpisode,
+    externalStartOffsetMinutes: state.externalStartOffsetMinutes,
+    externalNotes: state.externalNotes,
     title: state.title,
     isPlaying: state.isPlaying,
     currentTime: state.currentTime,
@@ -249,9 +264,24 @@ export function emitWatchReadyUpdated(
   roomId: string,
   readyUsers: FormattedReadyUser[],
 ): void {
-  getIO()
-    ?.to(getSocketRoomName(roomId))
-    .emit("watch:ready-updated", { roomId, readyUsers });
+  const payload: WatchReadyUpdatedPayload = { roomId, readyUsers };
+  getIO()?.to(getSocketRoomName(roomId)).emit("watch:ready-updated", payload);
+  getIO()?.to(getSocketRoomName(roomId)).emit("ready_state_updated", payload);
+}
+
+export function emitExternalSyncCommand(
+  roomId: string,
+  payload: ExternalSyncCommandPayload,
+): void {
+  getIO()?.to(getSocketRoomName(roomId)).emit("external_sync_command_sent", payload);
+}
+
+export function emitExternalSyncStatusUpdated(
+  roomId: string,
+  mediaState: FormattedMediaState,
+): void {
+  getIO()?.to(getSocketRoomName(roomId)).emit("external_sync_status_updated", mediaState);
+  getIO()?.to(getSocketRoomName(roomId)).emit("watch:state-updated", mediaState);
 }
 
 export function emitWatchCountdownStarted(
@@ -259,6 +289,7 @@ export function emitWatchCountdownStarted(
   payload: WatchCountdownStartedPayload,
 ): void {
   getIO()?.to(getSocketRoomName(roomId)).emit("watch:countdown-started", payload);
+  getIO()?.to(getSocketRoomName(roomId)).emit("watch_countdown_started", payload);
 }
 
 async function getMediaStateRecord(roomId: string) {
@@ -372,18 +403,10 @@ function parseAndNormalizeYouTubeUrl(videoUrl: string) {
 function buildMediaUpsertData(
   userId: string,
   input: SetWatchMediaInput,
-): {
-  provider: MediaProvider;
-  mode: MediaMode;
-  videoId: string | null;
-  videoUrl: string | null;
-  embedUrl: string | null;
-  externalTitle: string | null;
-  externalUrl: string | null;
-  title: string | null;
-} {
+) {
   const provider = input.provider as MediaProvider;
   const mode = getMediaMode(provider);
+  assertProviderAllowsMode(provider, mode);
 
   if (mode === MediaMode.EMBED) {
     const parsed = parseEmbedMediaInput(provider, input.url!);
@@ -395,15 +418,20 @@ function buildMediaUpsertData(
       embedUrl: parsed.embedUrl,
       externalTitle: null,
       externalUrl: null,
+      externalSeason: null,
+      externalEpisode: null,
+      externalStartOffsetMinutes: null,
+      externalNotes: null,
       title: null,
+      currentTime: 0,
     };
   }
 
-  const external = validateExternalProviderInput(
-    provider,
-    input.externalTitle,
-    input.externalUrl,
-  );
+  const external = validateExternalProviderInput(provider, input);
+  const startSeconds =
+    external.externalStartOffsetMinutes !== null
+      ? external.externalStartOffsetMinutes * 60
+      : 0;
 
   return {
     provider,
@@ -413,7 +441,12 @@ function buildMediaUpsertData(
     embedUrl: null,
     externalTitle: external.externalTitle,
     externalUrl: external.externalUrl,
+    externalSeason: external.externalSeason,
+    externalEpisode: external.externalEpisode,
+    externalStartOffsetMinutes: external.externalStartOffsetMinutes,
+    externalNotes: external.externalNotes,
     title: external.externalTitle,
+    currentTime: startSeconds,
   };
 }
 
@@ -427,7 +460,7 @@ export async function getWatchState(
   const mediaState = await getMediaStateRecord(roomId);
   const formatted = mediaState ? formatMediaState(mediaState) : null;
   const readyUsers =
-    formatted?.mode === MediaMode.EXTERNAL_SYNC
+    formatted?.mode && isExternalSyncMode(formatted.mode)
       ? await getFormattedReadyUsers(roomId)
       : [];
 
@@ -637,14 +670,14 @@ export async function setWatchMedia(
         ...mediaData,
         hostUserId: userId,
         isPlaying: false,
-        currentTime: 0,
+        currentTime: mediaData.currentTime,
         countdownEndsAt: null,
       },
       update: {
         ...mediaData,
         hostUserId: userId,
         isPlaying: false,
-        currentTime: 0,
+        currentTime: mediaData.currentTime,
         countdownEndsAt: null,
       },
       include: mediaStateInclude,
@@ -654,7 +687,7 @@ export async function setWatchMedia(
   const formatted = formatMediaState(mediaState);
   emitWatchStateUpdated(roomId, formatted);
 
-  if (formatted.mode === MediaMode.EXTERNAL_SYNC) {
+  if (formatted.mode && isExternalSyncMode(formatted.mode)) {
     const readyUsers = await getFormattedReadyUsers(roomId);
     emitWatchReadyUpdated(roomId, readyUsers);
   }
@@ -693,7 +726,7 @@ export async function setWatchReady(
 
   const mediaState = await assertMediaStateExists(roomId);
 
-  if (mediaState.mode !== MediaMode.EXTERNAL_SYNC) {
+  if (!isExternalSyncMode(mediaState.mode)) {
     throw new AppError(400, "Hazır olma yalnızca harici senkron modda kullanılabilir.");
   }
 
@@ -727,7 +760,7 @@ export async function startWatchCountdown(
   const existing = await assertMediaStateExists(roomId);
   assertHost(userId, existing);
 
-  if (existing.mode !== MediaMode.EXTERNAL_SYNC) {
+  if (!isExternalSyncMode(existing.mode)) {
     throw new AppError(400, "Geri sayım yalnızca harici senkron modda kullanılabilir.");
   }
 
@@ -749,6 +782,17 @@ export async function startWatchCountdown(
   };
 
   emitWatchCountdownStarted(roomId, payload);
+
+  if (isExternalSyncMode(formatted.mode)) {
+    emitExternalSyncCommand(roomId, {
+      roomId,
+      command: "COUNTDOWN_START",
+      currentTime: formatted.currentTime,
+      messageKey: getExternalSyncCommandMessageKey("COUNTDOWN_START"),
+      provider: formatted.provider,
+    });
+  }
+
   return { mediaState: formatted, ...payload };
 }
 
@@ -778,12 +822,50 @@ export async function controlWatch(
   });
 
   const formatted = formatMediaState(mediaState);
-  emitWatchStateUpdated(roomId, formatted);
 
-  const syncAction =
-    existing.mode === MediaMode.EXTERNAL_SYNC && input.action === "PLAY"
-      ? "START_TIMER"
-      : input.action;
+  if (isExternalSyncMode(existing.mode)) {
+    emitExternalSyncStatusUpdated(roomId, formatted);
+
+    const commandByAction: Partial<
+      Record<WatchControlInput["action"], ExternalSyncCommandType>
+    > = {
+      PAUSE: "PAUSE",
+      PLAY: "PLAY",
+      SEEK: "SEEK",
+    };
+    const command = commandByAction[input.action];
+
+    if (command) {
+      emitExternalSyncCommand(roomId, {
+        roomId,
+        command,
+        currentTime: formatted.currentTime,
+        messageKey: getExternalSyncCommandMessageKey(command),
+        provider: formatted.provider,
+      });
+    }
+
+    const syncAction =
+      input.action === "PLAY" ? "START_TIMER" : input.action;
+
+    emitWatchSync(
+      roomId,
+      {
+        roomId,
+        provider: formatted.provider,
+        mode: formatted.mode,
+        action: syncAction,
+        currentTime: formatted.currentTime,
+        isPlaying: formatted.isPlaying,
+        hostUserId: formatted.hostUserId,
+      },
+      excludeSocketId,
+    );
+
+    return formatted;
+  }
+
+  emitWatchStateUpdated(roomId, formatted);
 
   emitWatchSync(
     roomId,
@@ -791,7 +873,7 @@ export async function controlWatch(
       roomId,
       provider: formatted.provider,
       mode: formatted.mode,
-      action: syncAction,
+      action: input.action,
       currentTime: formatted.currentTime,
       isPlaying: formatted.isPlaying,
       hostUserId: formatted.hostUserId,

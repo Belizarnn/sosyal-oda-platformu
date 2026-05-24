@@ -36,6 +36,44 @@ enum RoomCategory {
   SPORTS
 }
 
+enum CommunityVisibility {
+  PUBLIC
+  INVITE_ONLY
+  PRIVATE
+}
+
+enum CommunityCategory {
+  FILM
+  SERIES
+  ANIME
+  GAME
+  EDUCATION
+  FRIENDS
+  GENERAL
+}
+
+enum CommunityMemberRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  MEMBER
+  GUEST
+}
+
+enum ChannelType {
+  TEXT
+  VOICE
+  VIDEO
+  WATCH
+  ANNOUNCEMENT
+  PRIVATE
+}
+
+enum ChannelVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 enum RoomMemberRole {
   OWNER
   MODERATOR
@@ -54,6 +92,7 @@ enum MediaProvider {
 enum MediaMode {
   EMBED
   EXTERNAL_SYNC
+  ASSISTED_EXTERNAL_SYNC
 }
 
 enum VideoQueueStatus {
@@ -93,6 +132,7 @@ enum NotificationType {
   DM_MESSAGE
   ROOM_INVITE
   ROOM_MODERATION
+  COMMUNITY_INVITE
   SYSTEM
 }
 
@@ -198,6 +238,10 @@ model User {
   analyticsEvents          AnalyticsEvent[]
   feedback                 Feedback[]
   betaAccessRedemptions    BetaAccessRedemption[]
+  ownedCommunities         Community[]           @relation("CommunityOwner")
+  communityMembers         CommunityMember[]
+  communityChannelsCreated CommunityChannel[]    @relation("CommunityChannelCreator")
+  communityInvitesCreated  CommunityInvite[]     @relation("CommunityInviteCreator")
 
   @@index([presenceStatus])
 }
@@ -316,22 +360,122 @@ model Room {
   inviteCreatedAt  DateTime?
   inviteUpdatedAt  DateTime?
   passwordHash     String?
+  isCommunityBacking Boolean @default(false)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  owner      User             @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members    RoomMember[]
-  messages   Message[]
+  owner            User             @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members          RoomMember[]
+  messages         Message[]
   mediaState       RoomMediaState?
   watchReadyStates RoomWatchReady[]
   videoQueueItems  RoomVideoQueueItem[]
   reports          Report[]
+  communityChannel CommunityChannel?
 
   @@index([category])
   @@index([type])
   @@index([isActive])
+  @@index([isCommunityBacking])
   @@index([createdAt])
   @@index([currentUserCount])
+}
+
+model Community {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  description String?
+  avatarUrl   String?
+  visibility  CommunityVisibility @default(PUBLIC)
+  category    CommunityCategory   @default(GENERAL)
+  ownerId     String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  owner    User              @relation("CommunityOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  CommunityMember[]
+  channels CommunityChannel[]
+  invites  CommunityInvite[]
+
+  @@index([visibility])
+  @@index([category])
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+model CommunityMember {
+  id          String              @id @default(cuid())
+  communityId String
+  userId      String
+  role        CommunityMemberRole @default(MEMBER)
+  joinedAt    DateTime            @default(now())
+  leftAt      DateTime?
+  isBanned    Boolean             @default(false)
+  bannedAt    DateTime?
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([communityId])
+  @@index([userId])
+  @@index([leftAt])
+}
+
+model CommunityChannel {
+  id            String            @id @default(cuid())
+  communityId   String
+  name          String
+  slug          String
+  description   String?
+  type          ChannelType
+  visibility    ChannelVisibility @default(PUBLIC)
+  position      Int               @default(0)
+  backingRoomId String?           @unique
+  createdById   String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  community   Community          @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  creator     User               @relation("CommunityChannelCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  backingRoom Room?              @relation(fields: [backingRoomId], references: [id], onDelete: SetNull)
+  permissions ChannelPermission?
+
+  @@unique([communityId, slug])
+  @@index([communityId, position])
+  @@index([type])
+}
+
+model ChannelPermission {
+  id                  String              @id @default(cuid())
+  channelId           String              @unique
+  minRoleView         CommunityMemberRole @default(GUEST)
+  minRoleSend         CommunityMemberRole @default(MEMBER)
+  minRoleWatchStart   CommunityMemberRole @default(MEMBER)
+  minRoleWatchControl CommunityMemberRole @default(MODERATOR)
+  minRoleVoice        CommunityMemberRole @default(MEMBER)
+  minRoleVideo        CommunityMemberRole @default(MEMBER)
+
+  channel CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+model CommunityInvite {
+  id          String    @id @default(cuid())
+  communityId String
+  code        String    @unique
+  createdById String
+  expiresAt   DateTime?
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  creator   User      @relation("CommunityInviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([communityId])
+  @@index([isActive])
 }
 
 model RoomMember {
@@ -407,6 +551,10 @@ model RoomMediaState {
   embedUrl        String?
   externalTitle   String?
   externalUrl     String?
+  externalSeason  Int?
+  externalEpisode Int?
+  externalStartOffsetMinutes Float?
+  externalNotes String?
   title           String?
   isPlaying       Boolean       @default(false)
   currentTime     Float         @default(0)

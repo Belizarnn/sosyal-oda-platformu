@@ -2,6 +2,11 @@ import { MediaMode, MediaProvider } from "@prisma/client";
 
 import { AppError } from "./asyncHandler";
 import {
+  isAssistedExternalProvider,
+  validateAssistedExternalInput,
+  type AssistedExternalMetadataInput,
+} from "./assistedExternalSync";
+import {
   normalizeYouTubeWatchUrl,
   parseYouTubeVideoId,
 } from "./parseYouTubeVideoId";
@@ -89,58 +94,23 @@ export function getMediaMode(provider: MediaProvider): MediaMode {
   switch (provider) {
     case MediaProvider.YOUTUBE:
     case MediaProvider.TWITCH:
+      return MediaMode.EMBED;
     case MediaProvider.KICK:
       return MediaMode.EMBED;
     case MediaProvider.NETFLIX:
     case MediaProvider.DISNEY_PLUS:
     case MediaProvider.PRIME_VIDEO:
-      return MediaMode.EXTERNAL_SYNC;
+      return MediaMode.ASSISTED_EXTERNAL_SYNC;
     default:
       return MediaMode.EMBED;
   }
 }
 
-const EXTERNAL_DOMAIN_HINTS: Record<string, string[]> = {
-  [MediaProvider.NETFLIX]: ["netflix.com"],
-  [MediaProvider.DISNEY_PLUS]: ["disneyplus.com"],
-  [MediaProvider.PRIME_VIDEO]: ["primevideo.com", "amazon.com"],
-};
-
 export function validateExternalProviderInput(
   provider: MediaProvider,
-  externalTitle?: string | null,
-  externalUrl?: string | null,
-): { externalTitle: string; externalUrl: string | null } {
-  const title = externalTitle?.trim() ?? "";
-  if (!title) {
-    throw new AppError(400, "Harici izleme için içerik adı zorunludur.");
-  }
-
-  if (title.length > 200) {
-    throw new AppError(400, "İçerik adı en fazla 200 karakter olabilir.");
-  }
-
-  const url = externalUrl?.trim() || null;
-  if (url) {
-    try {
-      const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
-      const host = parsed.hostname.replace(/^(www\.|m\.)/, "");
-      const hints = EXTERNAL_DOMAIN_HINTS[provider];
-      if (hints && !hints.some((hint) => host === hint || host.endsWith(`.${hint}`))) {
-        throw new AppError(
-          400,
-          "Harici link beklenen platform domainine ait görünmüyor.",
-        );
-      }
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw new AppError(400, "Geçerli bir harici link gir.");
-    }
-  }
-
-  return { externalTitle: title, externalUrl: url };
+  input: AssistedExternalMetadataInput,
+) {
+  return validateAssistedExternalInput(provider, input);
 }
 
 export type ParsedEmbedMedia = {

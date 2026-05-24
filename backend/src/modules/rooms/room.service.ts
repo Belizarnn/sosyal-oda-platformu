@@ -64,6 +64,7 @@ export async function listRooms(query: ListRoomsQuery, userId?: string) {
   const rooms = await prisma.room.findMany({
     where: {
       isActive: true,
+      isCommunityBacking: false,
       type: query.type ?? RoomType.PUBLIC,
       ...(query.category ? { category: query.category } : {}),
       ...(query.search

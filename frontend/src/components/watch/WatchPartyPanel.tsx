@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AddToQueueForm } from "@/components/watch/AddToQueueForm";
+import { AssistedExternalSyncPanel } from "@/components/watch/players/AssistedExternalSyncPanel";
 import { ExternalSyncPlayer } from "@/components/watch/players/ExternalSyncPlayer";
 import { KickWatchPlayer } from "@/components/watch/players/KickWatchPlayer";
 import { TwitchWatchPlayer } from "@/components/watch/players/TwitchWatchPlayer";
@@ -17,6 +18,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { ExternalSyncCommandPayload } from "@/lib/assistedExternalSync";
+import { isAssistedExternalSyncMode } from "@/lib/assistedExternalSync";
 import {
   ApiError,
   addToWatchQueue,
@@ -41,6 +44,7 @@ import type {
   WatchQueueItem,
   WatchReadyUser,
 } from "@/types/watch";
+import { getProviderLabel } from "@/types/watch";
 
 interface WatchPartyPanelProps {
   roomId: string;
@@ -49,6 +53,13 @@ interface WatchPartyPanelProps {
   currentUserRole?: RoomMemberRole | null;
   members: RoomMember[];
   socket: AppSocket | null;
+}
+
+function formatCommandTime(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
 export function WatchPartyPanel({
@@ -73,6 +84,7 @@ export function WatchPartyPanel({
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const applyMediaState = useCallback((state: RoomMediaState) => {
     setMediaState(state);
@@ -140,6 +152,29 @@ export function WatchPartyPanel({
       setReadyUsers(payload.readyUsers);
     };
 
+    const handleExternalSyncCommand = (payload: ExternalSyncCommandPayload) => {
+      if (payload.roomId !== roomId) {
+        return;
+      }
+
+      const platform = getProviderLabel(payload.provider);
+      const timeLabel = formatCommandTime(payload.currentTime);
+
+      if (payload.command === "SEEK") {
+        setSyncNotice(t(payload.messageKey, { time: timeLabel, platform }));
+        return;
+      }
+
+      setSyncNotice(t(payload.messageKey, { platform }));
+    };
+
+    const handleExternalSyncStatusUpdated = (state: RoomMediaState) => {
+      if (state.roomId !== roomId) {
+        return;
+      }
+      applyMediaState(state);
+    };
+
     const handleCountdownStarted = (payload: {
       roomId: string;
       countdownEndsAt: string;
@@ -192,20 +227,28 @@ export function WatchPartyPanel({
 
     socket.on("watch:state-updated", handleStateUpdated);
     socket.on("watch:ready-updated", handleReadyUpdated);
+    socket.on("ready_state_updated", handleReadyUpdated);
     socket.on("watch:countdown-started", handleCountdownStarted);
+    socket.on("watch_countdown_started", handleCountdownStarted);
     socket.on("watch:queue-updated", handleQueueUpdated);
     socket.on("watch:sync", handleSync);
+    socket.on("external_sync_command_sent", handleExternalSyncCommand);
+    socket.on("external_sync_status_updated", handleExternalSyncStatusUpdated);
     socket.on("watch:error", handleError);
 
     return () => {
       socket.off("watch:state-updated", handleStateUpdated);
       socket.off("watch:ready-updated", handleReadyUpdated);
+      socket.off("ready_state_updated", handleReadyUpdated);
       socket.off("watch:countdown-started", handleCountdownStarted);
+      socket.off("watch_countdown_started", handleCountdownStarted);
       socket.off("watch:queue-updated", handleQueueUpdated);
       socket.off("watch:sync", handleSync);
+      socket.off("external_sync_command_sent", handleExternalSyncCommand);
+      socket.off("external_sync_status_updated", handleExternalSyncStatusUpdated);
       socket.off("watch:error", handleError);
     };
-  }, [applyMediaState, isMember, roomId, socket]);
+  }, [applyMediaState, isMember, roomId, socket, t]);
 
   async function emitOrRequest<T>(
     event:
@@ -275,7 +318,7 @@ export function WatchPartyPanel({
         success(
           data.provider === "YOUTUBE"
             ? t("watch.videoStarted")
-            : "Harici izleme odası başlatıldı.",
+            : t("watch.assisted.sessionStarted"),
         );
       }
     } catch (err) {
@@ -585,6 +628,20 @@ export function WatchPartyPanel({
                   </>
                 ) : null}
               </div>
+            ) : isAssistedExternalSyncMode(mediaState.mode) ? (
+              <AssistedExternalSyncPanel
+                mediaState={mediaState}
+                readyUsers={readyUsers}
+                currentUserId={currentUserId}
+                isHost={isHost}
+                actionLoading={actionLoading}
+                syncNotice={syncNotice}
+                onToggleReady={(isReady) => void handleToggleReady(isReady)}
+                onStartCountdown={(seconds) => void handleStartCountdown(seconds)}
+                onPauseCommand={() => void handlePause()}
+                onPlayCommand={() => void handlePlay()}
+                onSeekCommand={(seconds) => void handleSeek(seconds)}
+              />
             ) : mediaState?.mode === "EXTERNAL_SYNC" ? (
               <ExternalSyncPlayer
                 mediaState={mediaState}

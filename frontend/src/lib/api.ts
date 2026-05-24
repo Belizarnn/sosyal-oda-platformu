@@ -56,6 +56,17 @@ import type {
   InvitePreview,
   InviteSettings,
 } from "@/types/invite";
+import type {
+  CreateChannelInput,
+  CreateCommunityInput,
+  CreateCommunityInviteInput,
+  CommunityDetailResponse,
+  CommunityFilters,
+  CommunityInvite,
+  CommunityInvitePreview,
+  CommunityListResponse,
+  CommunityChannel,
+} from "@/types/community";
 import type { DashboardResponse } from "@/types/dashboard";
 import type { ReportInput, ReportResponse } from "@/types/moderation";
 import type {
@@ -1079,5 +1090,95 @@ export function deleteAllNotifications(
   return apiRequest("/notifications", {
     method: "DELETE",
     body,
+  });
+}
+
+export function getCommunities(
+  filters: CommunityFilters = {},
+): Promise<CommunityListResponse> {
+  const params = new URLSearchParams();
+  if (filters.search) params.set("search", filters.search);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.visibility) params.set("visibility", filters.visibility);
+  if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.cursor) params.set("cursor", filters.cursor);
+  const suffix = params.toString();
+  return apiRequest(suffix ? `/communities?${suffix}` : "/communities");
+}
+
+export function createCommunity(
+  data: CreateCommunityInput,
+): Promise<CommunityDetailResponse> {
+  return apiRequest("/communities", { method: "POST", body: data });
+}
+
+export function getCommunityById(communityId: string): Promise<CommunityDetailResponse> {
+  return apiRequest(`/communities/${communityId}`);
+}
+
+export function joinCommunity(communityId: string): Promise<CommunityDetailResponse> {
+  return apiRequest(`/communities/${communityId}/join`, { method: "POST", body: {} });
+}
+
+export function leaveCommunity(communityId: string): Promise<{ message: string }> {
+  return apiRequest(`/communities/${communityId}/leave`, { method: "POST", body: {} });
+}
+
+export function createCommunityChannel(
+  communityId: string,
+  data: CreateChannelInput,
+): Promise<{ channel: CommunityChannel }> {
+  return apiRequest(`/communities/${communityId}/channels`, {
+    method: "POST",
+    body: data,
+  });
+}
+
+export function getCommunityChannel(
+  communityId: string,
+  channelId: string,
+): Promise<{
+  channel: CommunityChannel;
+  community: CommunityDetailResponse["community"];
+  isMember: boolean;
+  currentUserRole: CommunityDetailResponse["currentUserRole"];
+  members: CommunityDetailResponse["members"];
+}> {
+  return apiRequest(`/communities/${communityId}/channels/${channelId}`);
+}
+
+export function createCommunityInvite(
+  communityId: string,
+  data: CreateCommunityInviteInput = {},
+): Promise<{ invite: CommunityInvite }> {
+  return apiRequest(`/communities/${communityId}/invites`, {
+    method: "POST",
+    body: data,
+  });
+}
+
+export function getCommunityInvites(
+  communityId: string,
+): Promise<{ invites: CommunityInvite[] }> {
+  return apiRequest(`/communities/${communityId}/invites`);
+}
+
+export function revokeCommunityInvite(
+  communityId: string,
+  inviteId: string,
+): Promise<{ message: string }> {
+  return apiRequest(`/communities/${communityId}/invites/${inviteId}`, {
+    method: "DELETE",
+  });
+}
+
+export function getCommunityInvitePreview(code: string): Promise<CommunityInvitePreview> {
+  return apiRequest(`/community-invites/${encodeURIComponent(code)}`);
+}
+
+export function acceptCommunityInvite(code: string): Promise<CommunityDetailResponse> {
+  return apiRequest(`/community-invites/${encodeURIComponent(code)}/accept`, {
+    method: "POST",
+    body: {},
   });
 }

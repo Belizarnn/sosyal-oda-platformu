@@ -21,6 +21,7 @@ import type { RoomMember, RoomMemberRole } from "@/types/room";
 interface ChatPanelProps {
   roomId: string;
   isMember: boolean;
+  canSendMessages?: boolean;
   currentUserId?: string | null;
   currentUserRole?: RoomMemberRole | null;
   members?: RoomMember[];
@@ -30,6 +31,7 @@ interface ChatPanelProps {
 export function ChatPanel({
   roomId,
   isMember,
+  canSendMessages = true,
   currentUserId,
   currentUserRole,
   members = [],
@@ -254,7 +256,7 @@ export function ChatPanel({
   const isMuted = currentMember?.isMuted ?? false;
 
   const token = getToken();
-  const inputDisabled = !token || !isMember || !socket || isMuted;
+  const inputDisabled = !token || !isMember || !canSendMessages || !socket || isMuted;
   const disabledMessage = !token
     ? t("chat.loginRequired")
     : !isMember

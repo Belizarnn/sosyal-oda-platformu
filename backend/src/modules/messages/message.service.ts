@@ -33,6 +33,7 @@ import {
 } from "../rooms/room.service";
 
 import { assertCanSendMessage } from "../../utils/permissions";
+import { assertCanSendBackingRoomMessage } from "../../utils/communityPermissions";
 
 import type { ListMessagesQuery } from "./message.schemas";
 
@@ -157,6 +158,7 @@ export async function createRoomMessage(
 ) {
 
   await assertCanSendMessage(userId, roomId);
+  await assertCanSendBackingRoomMessage(userId, roomId);
 
 
 

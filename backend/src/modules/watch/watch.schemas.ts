@@ -9,6 +9,15 @@ const mediaProviderEnum = z.enum([
   "PRIME_VIDEO",
 ]);
 
+const assistedExternalFields = {
+  externalTitle: z.string().optional(),
+  externalUrl: z.string().optional(),
+  externalSeason: z.number().int().min(0).max(999).optional(),
+  externalEpisode: z.number().int().min(0).max(999).optional(),
+  externalStartOffsetMinutes: z.number().min(0).max(24 * 60).optional(),
+  externalNotes: z.string().max(500).optional(),
+};
+
 export const setWatchVideoSchema = z.object({
   videoUrl: z.string().min(1, "videoUrl zorunlu"),
 });
@@ -17,12 +26,11 @@ export const setWatchMediaSchema = z
   .object({
     provider: mediaProviderEnum,
     url: z.string().optional(),
-    externalTitle: z.string().optional(),
-    externalUrl: z.string().optional(),
+    ...assistedExternalFields,
   })
   .superRefine((data, ctx) => {
     const embedProviders = ["YOUTUBE", "TWITCH", "KICK"] as const;
-    const externalProviders = ["NETFLIX", "DISNEY_PLUS", "PRIME_VIDEO"] as const;
+    const assistedProviders = ["NETFLIX", "DISNEY_PLUS", "PRIME_VIDEO"] as const;
 
     if (embedProviders.includes(data.provider as (typeof embedProviders)[number])) {
       if (!data.url?.trim()) {
@@ -35,7 +43,7 @@ export const setWatchMediaSchema = z
     }
 
     if (
-      externalProviders.includes(data.provider as (typeof externalProviders)[number])
+      assistedProviders.includes(data.provider as (typeof assistedProviders)[number])
     ) {
       if (!data.externalTitle?.trim()) {
         ctx.addIssue({

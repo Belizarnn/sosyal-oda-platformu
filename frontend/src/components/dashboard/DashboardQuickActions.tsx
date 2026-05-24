@@ -18,7 +18,7 @@ export function DashboardQuickActions({
   const { t } = useLanguage();
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <Button onClick={onCreateRoom} className="min-h-12 justify-center">
         {t("dashboard.quickActions.createRoom")}
       </Button>
@@ -33,6 +33,10 @@ export function DashboardQuickActions({
         className="min-h-12 justify-center"
       >
         {t("dashboard.quickActions.enterInviteCode")}
+      </Button>
+
+      <Button variant="secondary" href="/communities/create" className="min-h-12 justify-center">
+        {t("communities.create")}
       </Button>
 
       {continueRoom ? (

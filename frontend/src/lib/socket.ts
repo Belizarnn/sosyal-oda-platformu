@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import { API_BASE_URL } from "./api";
+import type { ExternalSyncCommandPayload } from "@/lib/assistedExternalSync";
 import type {
   DmMessageDeletedEvent,
   DmTypingUpdateEvent,
@@ -49,8 +50,12 @@ export interface ServerToClientEvents {
   "watch:state-updated": (mediaState: RoomMediaState) => void;
   "watch:queue-updated": (payload: WatchQueueUpdatedPayload) => void;
   "watch:ready-updated": (payload: WatchReadyUpdatedPayload) => void;
+  "ready_state_updated": (payload: WatchReadyUpdatedPayload) => void;
   "watch:countdown-started": (payload: WatchCountdownStartedPayload) => void;
+  "watch_countdown_started": (payload: WatchCountdownStartedPayload) => void;
   "watch:sync": (payload: WatchSyncPayload) => void;
+  "external_sync_command_sent": (payload: ExternalSyncCommandPayload) => void;
+  "external_sync_status_updated": (mediaState: RoomMediaState) => void;
   "watch:error": (payload: WatchErrorPayload) => void;
   "message:deleted": (payload: { roomId: string; messageId: string }) => void;
   "moderation:user-kicked": (payload: {

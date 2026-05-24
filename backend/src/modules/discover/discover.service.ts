@@ -99,6 +99,7 @@ function buildWhereClause(query: DiscoverRoomsQuery) {
   return {
 
     isActive: true,
+    isCommunityBacking: false,
 
     type: RoomType.PUBLIC,
 

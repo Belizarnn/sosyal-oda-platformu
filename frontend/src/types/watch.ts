@@ -6,7 +6,7 @@ export type MediaProvider =
   | "DISNEY_PLUS"
   | "PRIME_VIDEO";
 
-export type MediaMode = "EMBED" | "EXTERNAL_SYNC";
+export type MediaMode = "EMBED" | "EXTERNAL_SYNC" | "ASSISTED_EXTERNAL_SYNC";
 
 export type WatchAction = "PLAY" | "PAUSE" | "SEEK" | "START_TIMER";
 
@@ -31,6 +31,10 @@ export interface RoomMediaState {
   embedUrl: string | null;
   externalTitle: string | null;
   externalUrl: string | null;
+  externalSeason: number | null;
+  externalEpisode: number | null;
+  externalStartOffsetMinutes: number | null;
+  externalNotes: string | null;
   title: string | null;
   isPlaying: boolean;
   currentTime: number;
@@ -129,6 +133,10 @@ export interface SetWatchMediaInput {
   url?: string;
   externalTitle?: string;
   externalUrl?: string;
+  externalSeason?: number;
+  externalEpisode?: number;
+  externalStartOffsetMinutes?: number;
+  externalNotes?: string;
 }
 
 export const WATCH_PROVIDER_OPTIONS: WatchProviderOption[] = [
@@ -156,22 +164,22 @@ export const WATCH_PROVIDER_OPTIONS: WatchProviderOption[] = [
   {
     provider: "NETFLIX",
     label: "Netflix",
-    description: "Herkes kendi hesabında açar, Sosyal Oda senkron başlatır.",
-    mode: "EXTERNAL_SYNC",
+    description: "Platform dışında açılır. Kendi hesabınızla izlersiniz; oda senkronizasyon sağlar.",
+    mode: "ASSISTED_EXTERNAL_SYNC",
     group: "external",
   },
   {
     provider: "DISNEY_PLUS",
     label: "Disney+",
-    description: "Kendi hesabında aç, odada birlikte takip et.",
-    mode: "EXTERNAL_SYNC",
+    description: "Platform dışında açılır. Kendi hesabınızla izlersiniz; oda senkronizasyon sağlar.",
+    mode: "ASSISTED_EXTERNAL_SYNC",
     group: "external",
   },
   {
     provider: "PRIME_VIDEO",
     label: "Prime Video",
-    description: "Harici izleme, ortak timer ve voice desteği.",
-    mode: "EXTERNAL_SYNC",
+    description: "Platform dışında açılır. Kendi hesabınızla izlersiniz; oda senkronizasyon sağlar.",
+    mode: "ASSISTED_EXTERNAL_SYNC",
     group: "external",
   },
 ];

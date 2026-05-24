@@ -37,6 +37,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   const navItems: NavItem[] = [
     { href: "/dashboard", labelKey: "nav.home" },
+    { href: "/communities", labelKey: "nav.communities" },
     { href: "/rooms", labelKey: "nav.rooms" },
     { href: "/messages", labelKey: "nav.messages" },
     {
