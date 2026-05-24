@@ -1,5 +1,6 @@
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
+import { VoiceProvider } from "@/contexts/VoiceContext";
 
 export default function AppLayout({
   children,
@@ -8,7 +9,9 @@ export default function AppLayout({
 }>) {
   return (
     <ProtectedRoute>
-      <AppShell>{children}</AppShell>
+      <VoiceProvider>
+        <AppShell>{children}</AppShell>
+      </VoiceProvider>
     </ProtectedRoute>
   );
 }

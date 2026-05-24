@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { SpeakingIndicator } from "@/components/voice/SpeakingIndicator";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/cn";
 import type { VoiceParticipant } from "@/types/voice";
 
 interface VoiceParticipantCardProps {
@@ -13,7 +14,14 @@ export function VoiceParticipantCard({ participant }: VoiceParticipantCardProps)
   const { t } = useLanguage();
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5 sm:p-3">
+    <li
+      className={cn(
+        "flex items-center gap-3 rounded-xl border bg-surface p-2.5 transition-all duration-300 sm:p-3",
+        participant.isSpeaking
+          ? "border-violet-400/40 bg-violet-400/5 shadow-[0_0_24px_rgba(167,139,250,0.12)]"
+          : "border-border",
+      )}
+    >
       <SpeakingIndicator
         name={participant.username}
         isSpeaking={participant.isSpeaking}
@@ -29,11 +37,6 @@ export function VoiceParticipantCard({ participant }: VoiceParticipantCardProps)
         ) : null}
         {participant.isDeafened ? (
           <Badge variant="muted">{t("voice.deafenedBadge")}</Badge>
-        ) : null}
-        {participant.isSpeaking ? (
-          <span className="text-[10px] font-medium text-accent">
-            {t("voice.speaking")}
-          </span>
         ) : null}
       </div>
     </li>

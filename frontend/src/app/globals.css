@@ -166,3 +166,35 @@ body {
 .premium-orbit {
   animation: premium-orbit 2s ease-out infinite;
 }
+
+@keyframes voice-speaking-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes voice-speaking-ring {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.voice-speaking-glow {
+  animation: voice-speaking-glow 1.8s ease-in-out infinite;
+}
+
+.voice-speaking-ring {
+  animation: voice-speaking-ring 1.4s ease-in-out infinite;
+}

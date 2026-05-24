@@ -1937,6 +1937,22 @@ Oda detay **Voice** sekmesi `VoicePanel` kullanır. Üye değilse uyarı göster
 9. `LIVEKIT_*` olmadan token isteği anlaşılır hata vermeli (**503**)
 10. Chat ve watch party bozulmadan çalışmalı
 
+## Ses ve Görüntü Sistemi
+
+- **LiveKit** üzerinden global sesli sohbet (`VoiceProvider`)
+- Sekme/sayfa değişince ses ve kamera **açık kalır** (yalnızca manuel ayrılma veya logout kapatır)
+- **Kamera aç/kapat** voice controls içinde
+- Konuşan kullanıcıda **glow/pulse** (avatar + video tile)
+- **GlobalVoiceBar** — bağlıyken alt mini panel
+- **Ayarlar → Ses ve Görüntü** — mikrofon/kamera/hoparlör seçimi, mikrofon test barı, kamera önizleme
+- Cihaz tercihleri `localStorage` ile saklanır
+
+### Bilinen kısıtlar
+
+- Bazı tarayıcılar hoparlör seçimini (`setSinkId`) desteklemez
+- Kamera/mikrofon izinleri kullanıcı tarafından verilmelidir
+- Sayfa yenilenirse voice/kamera bağlantısı doğal olarak kopar; son oda için yeniden katılma önerisi gösterilir
+
 ## Voice Altyapısı (Sprint 6 — tasarım)
 
 Sprint 6'da UI ve token endpoint iskeleti hazırlandı. Sprint 24 ile gerçek LiveKit entegrasyonu tamamlandı.

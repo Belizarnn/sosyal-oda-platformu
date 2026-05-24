@@ -26,6 +26,7 @@ export type SettingsSection =
   | "profile"
   | "premium"
   | "notifications"
+  | "audioVideo"
   | "security"
   | "language"
   | "danger";

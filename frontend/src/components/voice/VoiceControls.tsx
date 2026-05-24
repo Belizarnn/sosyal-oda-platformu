@@ -7,10 +7,14 @@ interface VoiceControlsProps {
   isConnected: boolean;
   isMuted: boolean;
   isDeafened: boolean;
+  isCameraEnabled?: boolean;
   disabled?: boolean;
   onToggleMute: () => void;
+  onToggleCamera?: () => void;
   onToggleDeafen: () => void;
   onDisconnect: () => void;
+  disconnectLabel?: string;
+  showCamera?: boolean;
 }
 
 function MicIcon({ muted }: { muted: boolean }) {
@@ -53,6 +57,24 @@ function HeadphoneIcon({ deafened }: { deafened: boolean }) {
       <path d="M3 14v-3a9 9 0 0 1 18 0v3" />
       <path d="M3 14a2 2 0 0 0 2 2h1v-5H5a2 2 0 0 0-2 2Z" />
       <path d="M21 14a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2Z" />
+    </svg>
+  );
+}
+
+function CameraIcon({ disabled }: { disabled: boolean }) {
+  if (disabled) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" />
+        <line x1="2" x2="22" y1="2" y2="22" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" />
+      <circle cx="12" cy="13" r="3" />
     </svg>
   );
 }
@@ -109,10 +131,14 @@ export function VoiceControls({
   isConnected,
   isMuted,
   isDeafened,
+  isCameraEnabled = false,
   disabled = false,
   onToggleMute,
+  onToggleCamera,
   onToggleDeafen,
   onDisconnect,
+  disconnectLabel,
+  showCamera = true,
 }: VoiceControlsProps) {
   const { t } = useLanguage();
 
@@ -121,7 +147,7 @@ export function VoiceControls({
   }
 
   return (
-    <div className="flex items-center justify-center gap-2 pt-2">
+    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
       <ControlButton
         label={isMuted ? t("voice.unmuteMic") : t("voice.muteMic")}
         active={isMuted}
@@ -130,6 +156,17 @@ export function VoiceControls({
       >
         <MicIcon muted={isMuted} />
       </ControlButton>
+
+      {showCamera && onToggleCamera ? (
+        <ControlButton
+          label={isCameraEnabled ? t("voice.disableCamera") : t("voice.enableCamera")}
+          active={!isCameraEnabled}
+          onClick={onToggleCamera}
+          disabled={disabled}
+        >
+          <CameraIcon disabled={!isCameraEnabled} />
+        </ControlButton>
+      ) : null}
 
       <ControlButton
         label={isDeafened ? t("voice.undeafen") : t("voice.deafen")}
@@ -141,7 +178,7 @@ export function VoiceControls({
       </ControlButton>
 
       <ControlButton
-        label={t("voice.disconnect")}
+        label={disconnectLabel ?? t("voice.leaveVoice")}
         danger
         onClick={onDisconnect}
         disabled={disabled}

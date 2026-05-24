@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useVoice } from "@/contexts/VoiceContext";
 import { getPresenceLabel, getPresenceMeta } from "@/lib/presence";
 import { cn } from "@/lib/cn";
 import { isAdminPanelRole } from "@/types/admin";
@@ -19,6 +20,7 @@ interface TopbarProps {
 
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { user, logout } = useAuth();
+  const { leaveVoiceRoom, isVoiceConnected } = useVoice();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -135,6 +137,9 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                   role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
+                    if (isVoiceConnected) {
+                      void leaveVoiceRoom();
+                    }
                     logout();
                   }}
                   className={cn(

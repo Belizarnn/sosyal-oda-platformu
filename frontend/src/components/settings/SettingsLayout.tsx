@@ -9,6 +9,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string; icon: string }[] = [
   { id: "profile", labelKey: "settings.sections.profile", icon: "✎" },
   { id: "premium", labelKey: "settings.sections.premium", icon: "✦" },
   { id: "notifications", labelKey: "settings.sections.notifications", icon: "◔" },
+  { id: "audioVideo", labelKey: "settings.sections.audioVideo", icon: "🎙" },
   { id: "security", labelKey: "settings.sections.security", icon: "⛨" },
   { id: "language", labelKey: "settings.sections.language", icon: "🌐" },
   { id: "danger", labelKey: "settings.sections.danger", icon: "⚠" },

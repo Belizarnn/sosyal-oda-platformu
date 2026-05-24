@@ -241,6 +241,7 @@ export function RoomDetailView({ roomId, inviteCodeFromUrl }: RoomDetailViewProp
               <div className="h-full min-h-[280px] sm:min-h-[360px]">
                 <VoicePanel
                   roomId={roomId}
+                  roomName={data.room.name}
                   isMember={isMember}
                   startMicMuted={Boolean(currentUserMember?.isMuted)}
                 />

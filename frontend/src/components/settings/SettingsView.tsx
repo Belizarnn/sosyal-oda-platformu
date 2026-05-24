@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AudioVideoSettings } from "@/components/settings/AudioVideoSettings";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { DangerZone } from "@/components/settings/DangerZone";
 import { LanguageSettings } from "@/components/settings/LanguageSettings";
@@ -83,6 +84,7 @@ export function SettingsView() {
             onPreferencesUpdated={handlePreferencesUpdated}
           />
         ) : null}
+        {activeSection === "audioVideo" ? <AudioVideoSettings /> : null}
         {activeSection === "security" ? <SecuritySettings /> : null}
         {activeSection === "language" ? <LanguageSettings /> : null}
         {activeSection === "danger" ? <DangerZone /> : null}
