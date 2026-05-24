@@ -47,6 +47,7 @@
   "nav.logout": "Çıkış Yap",
   "nav.myProfile": "Profilim",
   "nav.openMenu": "Menüyü aç",
+  "nav.closeMenu": "Menüyü kapat",
   "nav.mobileBottom": "Mobil ana navigasyon",
   "pwa.install.title": "Uygulamayı ana ekranına ekle",
   "pwa.install.description": "Mobil tarayıcından Sosyal Oda'yı ana ekrana ekleyerek uygulama gibi kullanabilirsin.",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { Sidebar } from "./Sidebar";
+import { SidebarToggleButton } from "./SidebarToggleButton";
 import { Topbar } from "./Topbar";
 
 interface AppShellProps {
@@ -16,6 +17,10 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex min-h-[100dvh] bg-background">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SidebarToggleButton
+        visible={!sidebarOpen}
+        onClick={() => setSidebarOpen(true)}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />

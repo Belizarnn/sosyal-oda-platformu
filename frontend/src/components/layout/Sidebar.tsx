@@ -13,6 +13,14 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+function CloseIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 type NavItem = {
   href: string;
   labelKey: string;
@@ -67,7 +75,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <>
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-[var(--overlay)] backdrop-blur-sm transition-opacity lg:hidden",
+          "fixed inset-0 z-40 bg-[var(--overlay)] backdrop-blur-sm transition-opacity",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={onClose}
@@ -76,17 +84,26 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-border bg-sidebar/95 backdrop-blur-xl transition-transform lg:static lg:max-w-none lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full",
+          "fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-border bg-sidebar/95 backdrop-blur-xl transition-transform duration-300 ease-out",
+          open ? "translate-x-0" : "-translate-x-full pointer-events-none",
         )}
+        aria-hidden={!open}
       >
-        <div className="border-b border-border px-5 py-5">
-          <Link href="/" className="block" onClick={onClose}>
+        <div className="flex items-start justify-between border-b border-border px-5 py-5">
+          <Link href="/" className="block min-w-0 flex-1" onClick={onClose}>
             <p className="text-xs font-medium uppercase tracking-widest text-muted">
               {t("common.brandTagline")}
             </p>
             <p className="text-lg font-semibold text-foreground">{t("common.brandName")}</p>
           </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-2 inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-muted transition hover:bg-surface-hover hover:text-foreground"
+            aria-label={t("nav.closeMenu")}
+          >
+            <CloseIcon />
+          </button>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
