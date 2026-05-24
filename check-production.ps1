@@ -22,6 +22,7 @@ function Test-Endpoint {
 
 Test-Endpoint "API /health" "$Api/health"
 Test-Endpoint "API /health/db" "$Api/health/db"
+Test-Endpoint "API /health/schema" "$Api/health/schema"
 Test-Endpoint "API /health/integrations" "$Api/health/integrations"
 
 try {

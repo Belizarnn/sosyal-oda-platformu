@@ -57,7 +57,7 @@ npm install --include=dev && npm run build && npx prisma generate
 Start command:
 
 ```bash
-npm run start
+npx prisma migrate deploy && npm run start
 ```
 
 Health check path: **`/health`**

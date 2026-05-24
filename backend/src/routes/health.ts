@@ -27,6 +27,25 @@ healthRouter.get("/db", async (_req, res) => {
   }
 });
 
+healthRouter.get("/schema", async (_req, res) => {
+  try {
+    await prisma.room.findFirst({
+      where: { isCommunityBacking: false },
+      select: { id: true },
+    });
+    res.json({ status: "ok", schema: "compatible" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Bilinmeyen hata";
+    console.error("Schema health check failed:", message);
+    res.status(503).json({
+      status: "error",
+      schema: "incompatible",
+      message,
+      hint: "Production veritabanında prisma migrate deploy çalıştırılmalı.",
+    });
+  }
+});
+
 healthRouter.get("/integrations", (_req, res) => {
   const livekitConfigured = Boolean(
     env.livekitUrl && env.livekitApiKey && env.livekitApiSecret,
