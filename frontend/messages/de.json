@@ -1,0 +1,110 @@
+{
+  "landing": {
+    "brand": "Social Room",
+    "footer": "© {year} Social-Room-Plattform",
+    "hero": {
+      "title": "Social Room",
+      "subtitle": "Triff deine Freunde im selben digitalen Raum.",
+      "description": "Chatte, schaut gemeinsam, lernt, tretet Spielräumen bei und verbringt Zeit in Communities.",
+      "cta": "Los geht's"
+    },
+    "authModal": {
+      "title": "Melde dich an, um fortzufahren",
+      "description": "Melde dich an oder erstelle ein Konto, um sozialen Räumen beizutreten, mit Freunden zu chatten und das gemeinsame Seherlebnis zu nutzen.",
+      "login": "Anmelden",
+      "register": "Registrieren",
+      "note": "Plattforminhalte sind nur für angemeldete Nutzer verfügbar."
+    },
+    "features": {
+      "title": "Was du tun kannst",
+      "items": {
+        "socialRooms": {
+          "title": "Sozialen Räumen beitreten",
+          "description": "Triff deine Freunde im selben digitalen Raum."
+        },
+        "voiceChat": {
+          "title": "Mit Freunden per Sprache chatten",
+          "description": "Verbringt Zeit zusammen mit Sprachkommunikation im Raum."
+        },
+        "realtimeChat": {
+          "title": "Echtzeit-Chat nutzen",
+          "description": "Schreibt sofort, reagiert und haltet den Chat lebendig."
+        },
+        "watchParty": {
+          "title": "Gemeinsam YouTube schauen",
+          "description": "Schaut dasselbe Video gleichzeitig mit Watch Party."
+        },
+        "studyRooms": {
+          "title": "Lernräumen beitreten",
+          "description": "Bleib motiviert in ruhigen oder fokussierten Lernräumen."
+        },
+        "gameLobby": {
+          "title": "Spiel-Lobbys erstellen",
+          "description": "Versammle dein Team im selben Raum vor dem Spiel."
+        }
+      }
+    },
+    "social": {
+      "title": "So sozial wie Discord, einfacher und fokussierter.",
+      "description": "Erstelle Räume, lade Freunde ein, chatte per Text und Sprache. Sieh auf einem Bildschirm, wer in welchem Raum ist, wer lernt und wer Video schaut.",
+      "mockRooms": {
+        "nightChat": "Nacht-Chat-Raum",
+        "animeWatch": "Anime Watch Party",
+        "studyRoom": "Software-Lernraum"
+      },
+      "mockPresence": {
+        "studying": "Sudenaz studying",
+        "inRoom": "Yavuzhan in room"
+      },
+      "mockOnlineFriends": "Online-Freunde",
+      "mockActiveRooms": "Aktive Räume",
+      "mockChatPreview": "Chat-Vorschau"
+    },
+    "watch": {
+      "title": "Gemeinsam schauen, gemeinsam abhängen.",
+      "description": "Schaut dasselbe YouTube-Video gleichzeitig mit Freunden. Erstellt soziale Räume für Anime-Nächte, Filmgespräche und Livestream-Räume.",
+      "items": {
+        "youtube": {
+          "title": "YouTube Watch Party",
+          "description": "Synchron schauen und gemeinsam chatten."
+        },
+        "anime": {
+          "title": "Anime-Nächte",
+          "description": "Gemeinsame Watch-Räume Folge für Folge."
+        },
+        "film": {
+          "title": "Filmgespräche",
+          "description": "Eigene Bereiche für Gespräche nach dem Film."
+        },
+        "live": {
+          "title": "Livestream-Räume",
+          "description": "Streams gemeinsam verfolgen."
+        },
+        "screenShare": {
+          "title": "Bildschirmfreigabe demnächst",
+          "description": "Bildschirmfreigabe kommt bald."
+        }
+      }
+    },
+    "preview": {
+      "title": "Ein Blick in die App",
+      "description": "Ein moderner sozialer Raum, der Dashboard, Räume, Chat, Profil und Watch Party vereint.",
+      "items": {
+        "dashboard": "Dashboard",
+        "room": "Raumdetail",
+        "chat": "Chat",
+        "watch": "Watch Party",
+        "profile": "Profil",
+        "dm": "DM"
+      }
+    },
+    "finalCta": {
+      "title": "Bereit, deinen eigenen digitalen Raum zu erstellen?",
+      "description": "Lade deine Freunde ein, erstelle deinen Raum und verbringt Zeit zusammen.",
+      "button": "Los geht's"
+    },
+    "language": {
+      "label": "Sprache"
+    }
+  }
+}

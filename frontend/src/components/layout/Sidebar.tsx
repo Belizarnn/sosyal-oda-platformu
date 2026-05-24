@@ -1,0 +1,138 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Avatar } from "@/components/ui/Avatar";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/cn";
+import { isAdminPanelRole } from "@/types/admin";
+
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+type NavItem = {
+  href: string;
+  labelKey: string;
+  icon: string;
+  isActive?: (pathname: string) => boolean;
+};
+
+export function Sidebar({ open, onClose }: SidebarProps) {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const { t } = useLanguage();
+
+  const profileHref = user ? `/profile/${user.handle}` : "/login";
+  const showAdminLink = isAdminPanelRole(user?.role);
+
+  const navItems: NavItem[] = [
+    { href: "/dashboard", labelKey: "nav.home", icon: "◫" },
+    { href: "/rooms", labelKey: "nav.rooms", icon: "◎" },
+    { href: "/friends", labelKey: "nav.friends", icon: "♡" },
+    { href: "/messages", labelKey: "nav.messages", icon: "✉" },
+    {
+      href: "/notifications",
+      labelKey: "nav.notifications",
+      icon: "◔",
+      isActive: (path) => path.startsWith("/notifications"),
+    },
+    {
+      href: profileHref,
+      labelKey: "nav.profile",
+      icon: "◉",
+      isActive: (path) => path.startsWith("/profile"),
+    },
+    {
+      href: "/settings",
+      labelKey: "nav.settings",
+      icon: "⚙",
+      isActive: (path) => path.startsWith("/settings"),
+    },
+    ...(showAdminLink
+      ? [
+          {
+            href: "/admin",
+            labelKey: "nav.admin",
+            icon: "⛨" as const,
+            isActive: (path: string) => path.startsWith("/admin"),
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <>
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-[var(--overlay)] backdrop-blur-sm transition-opacity lg:hidden",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={onClose}
+        aria-hidden
+      />
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-border bg-sidebar/95 backdrop-blur-xl transition-transform lg:static lg:max-w-none lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="border-b border-border px-5 py-5">
+          <Link href="/" className="block" onClick={onClose}>
+            <p className="text-xs font-medium uppercase tracking-widest text-muted">
+              {t("common.brandTagline")}
+            </p>
+            <p className="text-lg font-semibold text-foreground">{t("common.brandName")}</p>
+          </Link>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+          {navItems.map((item) => {
+            const isActive =
+              item.isActive?.(pathname) ?? pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  "flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm transition",
+                  isActive
+                    ? "bg-accent-soft text-foreground shadow-[inset_0_0_20px_var(--accent-soft)]"
+                    : "text-muted hover:bg-surface-hover hover:text-foreground",
+                )}
+              >
+                <span className="text-base">{item.icon}</span>
+                {t(item.labelKey)}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-border p-4">
+          {user ? (
+            <div className="flex items-center gap-3 rounded-xl bg-surface p-3">
+              <Avatar name={user.username} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{user.username}</p>
+                <p className="truncate text-xs text-muted">@{user.handle}</p>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="block rounded-xl border border-border bg-surface p-3 text-center text-sm text-muted transition hover:bg-surface-hover hover:text-foreground"
+            >
+              {t("nav.login")}
+            </Link>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}

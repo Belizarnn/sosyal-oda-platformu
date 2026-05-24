@@ -1,0 +1,110 @@
+{
+  "landing": {
+    "brand": "Sosyal Oda",
+    "footer": "© {year} Sosyal Oda Platformu",
+    "hero": {
+      "title": "Sosyal Oda",
+      "subtitle": "Arkadaşlarınla aynı dijital odada buluş.",
+      "description": "Sohbet et, birlikte izle, ders çalış, oyun odalarına katıl ve topluluklarla vakit geçir.",
+      "cta": "Hadi Başlayalım"
+    },
+    "authModal": {
+      "title": "Devam etmek için hesabına giriş yap",
+      "description": "Sosyal odalara katılmak, arkadaşlarınla sohbet etmek ve birlikte izleme deneyimini kullanmak için giriş yap veya hesap oluştur.",
+      "login": "Giriş Yap",
+      "register": "Kayıt Ol",
+      "note": "Platform içeriği yalnızca giriş yapan kullanıcılara açıktır."
+    },
+    "features": {
+      "title": "Neler Yapabileceğin",
+      "items": {
+        "socialRooms": {
+          "title": "Sosyal odalara katıl",
+          "description": "Arkadaşlarınla aynı dijital alanda buluş."
+        },
+        "voiceChat": {
+          "title": "Arkadaşlarınla sesli sohbet et",
+          "description": "Oda içi sesli iletişimle birlikte vakit geçir."
+        },
+        "realtimeChat": {
+          "title": "Realtime chat kullan",
+          "description": "Odada anlık mesajlaş, tepki ver ve sohbeti canlı tut."
+        },
+        "watchParty": {
+          "title": "Birlikte YouTube izle",
+          "description": "Watch Party ile aynı videoyu aynı anda izle."
+        },
+        "studyRooms": {
+          "title": "Ders çalışma odalarına gir",
+          "description": "Sessiz veya odaklı çalışma odalarında motive kal."
+        },
+        "gameLobby": {
+          "title": "Oyun lobby'leri oluştur",
+          "description": "Takımını topla, oyun öncesi aynı odada buluş."
+        }
+      }
+    },
+    "social": {
+      "title": "Discord kadar sosyal, daha sade ve odaklı.",
+      "description": "Oda kur, arkadaşlarını çağır, yazılı ve sesli sohbet et. Kim hangi odada, kim ders çalışıyor, kim video izliyor tek ekranda gör.",
+      "mockRooms": {
+        "nightChat": "Gece Sohbet Odası",
+        "animeWatch": "Anime Watch Party",
+        "studyRoom": "Yazılım Çalışma Odası"
+      },
+      "mockPresence": {
+        "studying": "Sudenaz studying",
+        "inRoom": "Yavuzhan in room"
+      },
+      "mockOnlineFriends": "Online arkadaşlar",
+      "mockActiveRooms": "Aktif odalar",
+      "mockChatPreview": "Chat preview"
+    },
+    "watch": {
+      "title": "Beraber izle, beraber takıl.",
+      "description": "YouTube Watch Party ile aynı videoyu arkadaşlarınla aynı anda izle. Anime geceleri, film sohbetleri ve canlı yayın odaları için sosyal alanlar oluştur.",
+      "items": {
+        "youtube": {
+          "title": "YouTube Watch Party",
+          "description": "Aynı videoyu senkron izle, sohbet et."
+        },
+        "anime": {
+          "title": "Anime Geceleri",
+          "description": "Bölüm bölüm birlikte izleme odaları."
+        },
+        "film": {
+          "title": "Film Sohbetleri",
+          "description": "Film sonrası sohbet için özel alanlar."
+        },
+        "live": {
+          "title": "Canlı Yayın Odaları",
+          "description": "Yayınları birlikte takip et."
+        },
+        "screenShare": {
+          "title": "Screen Share Yakında",
+          "description": "Ekran paylaşımı yakında geliyor."
+        }
+      }
+    },
+    "preview": {
+      "title": "Uygulama içinden bir bakış",
+      "description": "Dashboard, odalar, chat, profil ve watch party deneyimini tek yerde toplayan modern sosyal alan.",
+      "items": {
+        "dashboard": "Dashboard",
+        "room": "Oda Detayı",
+        "chat": "Chat",
+        "watch": "Watch Party",
+        "profile": "Profil",
+        "dm": "DM"
+      }
+    },
+    "finalCta": {
+      "title": "Kendi dijital odanı kurmaya hazır mısın?",
+      "description": "Arkadaşlarını çağır, odanı oluştur ve birlikte vakit geçirmeye başla.",
+      "button": "Hadi Başlayalım"
+    },
+    "language": {
+      "label": "Dil"
+    }
+  }
+}

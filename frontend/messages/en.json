@@ -1,0 +1,110 @@
+{
+  "landing": {
+    "brand": "Social Room",
+    "footer": "© {year} Social Room Platform",
+    "hero": {
+      "title": "Social Room",
+      "subtitle": "Meet your friends in the same digital room.",
+      "description": "Chat, watch together, study, join game rooms, and spend time with communities.",
+      "cta": "Let's Get Started"
+    },
+    "authModal": {
+      "title": "Sign in to continue",
+      "description": "Sign in or create an account to join social rooms, chat with friends, and use the watch together experience.",
+      "login": "Sign In",
+      "register": "Sign Up",
+      "note": "Platform content is available only to signed-in users."
+    },
+    "features": {
+      "title": "What You Can Do",
+      "items": {
+        "socialRooms": {
+          "title": "Join social rooms",
+          "description": "Meet your friends in the same digital space."
+        },
+        "voiceChat": {
+          "title": "Voice chat with friends",
+          "description": "Spend time together with in-room voice communication."
+        },
+        "realtimeChat": {
+          "title": "Use realtime chat",
+          "description": "Message instantly, react, and keep the conversation alive."
+        },
+        "watchParty": {
+          "title": "Watch YouTube together",
+          "description": "Watch the same video at the same time with Watch Party."
+        },
+        "studyRooms": {
+          "title": "Join study rooms",
+          "description": "Stay motivated in quiet or focused study rooms."
+        },
+        "gameLobby": {
+          "title": "Create game lobbies",
+          "description": "Gather your team in the same room before playing."
+        }
+      }
+    },
+    "social": {
+      "title": "As social as Discord, simpler and more focused.",
+      "description": "Create rooms, invite friends, chat by text and voice. See who is in which room, who is studying, and who is watching video on one screen.",
+      "mockRooms": {
+        "nightChat": "Night Chat Room",
+        "animeWatch": "Anime Watch Party",
+        "studyRoom": "Software Study Room"
+      },
+      "mockPresence": {
+        "studying": "Sudenaz studying",
+        "inRoom": "Yavuzhan in room"
+      },
+      "mockOnlineFriends": "Online friends",
+      "mockActiveRooms": "Active rooms",
+      "mockChatPreview": "Chat preview"
+    },
+    "watch": {
+      "title": "Watch together, hang out together.",
+      "description": "Watch the same YouTube video with friends at the same time. Create social spaces for anime nights, film chats, and live stream rooms.",
+      "items": {
+        "youtube": {
+          "title": "YouTube Watch Party",
+          "description": "Watch in sync and chat together."
+        },
+        "anime": {
+          "title": "Anime Nights",
+          "description": "Episode-by-episode watch rooms."
+        },
+        "film": {
+          "title": "Film Chats",
+          "description": "Dedicated spaces for post-movie conversations."
+        },
+        "live": {
+          "title": "Live Stream Rooms",
+          "description": "Follow streams together."
+        },
+        "screenShare": {
+          "title": "Screen Share Coming Soon",
+          "description": "Screen sharing is coming soon."
+        }
+      }
+    },
+    "preview": {
+      "title": "A look inside the app",
+      "description": "A modern social space that brings dashboard, rooms, chat, profile, and watch party together.",
+      "items": {
+        "dashboard": "Dashboard",
+        "room": "Room Detail",
+        "chat": "Chat",
+        "watch": "Watch Party",
+        "profile": "Profile",
+        "dm": "DM"
+      }
+    },
+    "finalCta": {
+      "title": "Ready to build your own digital room?",
+      "description": "Invite your friends, create your room, and start spending time together.",
+      "button": "Let's Get Started"
+    },
+    "language": {
+      "label": "Language"
+    }
+  }
+}

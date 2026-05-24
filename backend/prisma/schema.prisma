@@ -1,0 +1,543 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PresenceStatus {
+  ONLINE
+  IDLE
+  IN_ROOM
+  WATCHING
+  STUDYING
+  LISTENING
+  GAMING
+  OFFLINE
+}
+
+enum RoomType {
+  PUBLIC
+  PRIVATE
+  INVITE_ONLY
+  PASSWORD_PROTECTED
+}
+
+enum RoomCategory {
+  GAME
+  FILM
+  STUDY
+  ANIME
+  MUSIC
+  CHAT
+  SOFTWARE
+  SPORTS
+}
+
+enum RoomMemberRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+enum MediaProvider {
+  YOUTUBE
+  TWITCH
+  KICK
+  NETFLIX
+  DISNEY_PLUS
+  PRIME_VIDEO
+}
+
+enum MediaMode {
+  EMBED
+  EXTERNAL_SYNC
+}
+
+enum VideoQueueStatus {
+  QUEUED
+  PLAYING
+  PLAYED
+  REMOVED
+}
+
+enum ReportTargetType {
+  USER
+  MESSAGE
+  ROOM
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  REJECTED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum ConversationType {
+  DIRECT
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  DM_MESSAGE
+  ROOM_INVITE
+  ROOM_MODERATION
+  SYSTEM
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum FeedbackType {
+  GENERAL
+  BUG
+  FEATURE_REQUEST
+  UX
+}
+
+enum FeedbackStatus {
+  OPEN
+  REVIEWED
+  PLANNED
+  RESOLVED
+  REJECTED
+}
+
+model BetaAccessCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  maxUses   Int       @default(1)
+  usedCount Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  redemptions BetaAccessRedemption[]
+
+  @@index([isActive])
+}
+
+model BetaAccessRedemption {
+  id         String   @id @default(cuid())
+  codeId     String
+  userId     String
+  redeemedAt DateTime @default(now())
+
+  code BetaAccessCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([codeId])
+  @@index([userId])
+}
+
+model User {
+  id             String         @id @default(cuid())
+  username       String
+  handle         String         @unique
+  email          String         @unique
+  passwordHash   String
+  emailVerified  Boolean        @default(false)
+  emailVerifiedAt DateTime?
+  role           UserRole       @default(USER)
+  avatarUrl      String?
+  bannerUrl      String?
+  bio            String?
+  statusMessage  String?
+  presenceStatus PresenceStatus @default(ONLINE)
+  profileInterests String[]       @default([])
+  notifyFriendRequests Boolean    @default(true)
+  notifyFriendAccepted Boolean    @default(true)
+  notifyDmMessages     Boolean    @default(true)
+  notifyRoomModeration Boolean    @default(true)
+  notifyRoomActivity   Boolean    @default(true)
+  notifySystem         Boolean    @default(true)
+  isPremium            Boolean    @default(false)
+  premiumStartedAt     DateTime?
+  premiumExpiresAt     DateTime?
+  premiumPlan          String?
+  premiumBadgeVisible  Boolean    @default(true)
+  premiumProfileFrame  String?
+  premiumAvatarEffect  String?
+  stripeCustomerId     String?        @unique
+  lastSeenAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  ownedRooms         Room[]            @relation("RoomOwner")
+  roomMembers        RoomMember[]
+  messages           Message[]
+  hostedMediaStates  RoomMediaState[]
+  watchReadyStates   RoomWatchReady[]
+  videoQueueItems    RoomVideoQueueItem[]
+  reportsCreated     Report[]          @relation("ReportReporter")
+  reportsReceived    Report[]          @relation("ReportTargetUser")
+  sentFriendRequests       FriendRequest[]           @relation("SentFriendRequests")
+  receivedFriendRequests   FriendRequest[]           @relation("ReceivedFriendRequests")
+  friendshipsA             Friendship[]              @relation("FriendshipsA")
+  friendshipsB             Friendship[]              @relation("FriendshipsB")
+  conversationParticipants ConversationParticipant[]
+  directMessages           DirectMessage[]
+  notifications            Notification[]
+  emailVerificationTokens  EmailVerificationToken[]
+  passwordResetTokens      PasswordResetToken[]
+  subscriptions            Subscription[]
+  analyticsEvents          AnalyticsEvent[]
+  feedback                 Feedback[]
+  betaAccessRedemptions    BetaAccessRedemption[]
+
+  @@index([presenceStatus])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String
+  provider             String    @default("stripe")
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([stripeCustomerId])
+}
+
+model PaymentEvent {
+  id          String    @id @default(cuid())
+  provider    String    @default("stripe")
+  eventId     String    @unique
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([eventType])
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  userId     String?
+  eventName  String
+  properties Json?
+  sessionId  String?
+  path       String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventName])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Feedback {
+  id        String         @id @default(cuid())
+  userId    String?
+  type      FeedbackType
+  status    FeedbackStatus @default(OPEN)
+  title     String
+  message   String
+  rating    Int?
+  pageUrl   String?
+  userAgent String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([type])
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model Room {
+  id               String       @id @default(cuid())
+  name             String
+  slug             String       @unique
+  description      String?
+  category         RoomCategory
+  type             RoomType
+  ownerId          String
+  currentUserCount Int          @default(0)
+  maxUserCount     Int          @default(20)
+  isActive         Boolean      @default(true)
+  inviteCode       String       @unique
+  inviteEnabled    Boolean      @default(true)
+  inviteCreatedAt  DateTime?
+  inviteUpdatedAt  DateTime?
+  passwordHash     String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  owner      User             @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members    RoomMember[]
+  messages   Message[]
+  mediaState       RoomMediaState?
+  watchReadyStates RoomWatchReady[]
+  videoQueueItems  RoomVideoQueueItem[]
+  reports          Report[]
+
+  @@index([category])
+  @@index([type])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([currentUserCount])
+}
+
+model RoomMember {
+  id       String         @id @default(cuid())
+  roomId   String
+  userId   String
+  role     RoomMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+  leftAt      DateTime?
+  isMuted     Boolean        @default(false)
+  isBanned    Boolean        @default(false)
+  mutedUntil  DateTime?
+  bannedAt    DateTime?
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+  @@index([leftAt])
+  @@index([isBanned])
+}
+
+model Message {
+  id               String    @id @default(cuid())
+  roomId           String
+  senderId         String
+  content          String
+  replyToMessageId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  room           Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender         User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyToMessage Message?  @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies        Message[] @relation("MessageReplies")
+  reports        Report[]
+
+  @@index([roomId, createdAt])
+  @@index([senderId])
+}
+
+model Report {
+  id              String           @id @default(cuid())
+  reporterId      String
+  targetType      ReportTargetType
+  targetUserId    String?
+  targetMessageId String?
+  targetRoomId    String?
+  reason          String
+  description     String?
+  status          ReportStatus     @default(OPEN)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  reporter      User     @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser    User?    @relation("ReportTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  targetMessage Message? @relation(fields: [targetMessageId], references: [id], onDelete: SetNull)
+  targetRoom    Room?    @relation(fields: [targetRoomId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model RoomMediaState {
+  id              String        @id @default(cuid())
+  roomId          String        @unique
+  provider        MediaProvider @default(YOUTUBE)
+  mode            MediaMode     @default(EMBED)
+  videoId         String?
+  videoUrl        String?
+  embedUrl        String?
+  externalTitle   String?
+  externalUrl     String?
+  title           String?
+  isPlaying       Boolean       @default(false)
+  currentTime     Float         @default(0)
+  hostUserId      String
+  countdownEndsAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  room     Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  hostUser User @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+}
+
+model RoomWatchReady {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  isReady   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+}
+
+model RoomVideoQueueItem {
+  id        String           @id @default(cuid())
+  roomId    String
+  addedById String
+  videoId   String
+  videoUrl  String
+  title     String?
+  position  Int
+  status    VideoQueueStatus @default(QUEUED)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  room    Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  addedBy User @relation(fields: [addedById], references: [id], onDelete: Cascade)
+
+  @@index([roomId, status, position])
+}
+
+model FriendRequest {
+  id         String              @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  sender   User @relation("SentFriendRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedFriendRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId, status])
+  @@index([senderId, status])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA User @relation("FriendshipsA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipsB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  type      ConversationType @default(DIRECT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  participants ConversationParticipant[]
+  messages     DirectMessage[]
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model DirectMessage {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
+  @@index([type])
+}
