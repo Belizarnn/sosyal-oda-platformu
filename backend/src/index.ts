@@ -2,6 +2,7 @@ import { execSync } from "node:child_process";
 import { createServer } from "http";
 import { app } from "./app";
 import { env } from "./config/env";
+import { ensureProductionSchema } from "./lib/ensureSchema";
 import { disconnectRedis } from "./lib/redis";
 import { setupSocket } from "./socket";
 
@@ -11,15 +12,20 @@ function runProductionMigrations(): void {
   }
 
   console.log("Production migration kontrolü başlatılıyor...");
-  execSync("npx prisma migrate deploy", {
-    stdio: "inherit",
-    env: process.env,
-  });
-  console.log("Migration kontrolü tamamlandı.");
+  try {
+    execSync("npx prisma migrate deploy", {
+      stdio: "inherit",
+      env: process.env,
+    });
+    console.log("Migration kontrolü tamamlandı.");
+  } catch (error) {
+    console.error("Migration deploy uyarısı (schema repair devam edecek):", error);
+  }
 }
 
 async function startServer(): Promise<void> {
   runProductionMigrations();
+  await ensureProductionSchema();
 
   const httpServer = createServer(app);
 

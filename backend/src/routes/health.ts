@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { env } from "../config/env";
+import { ensureProductionSchema, verifyWatchSchema } from "../lib/ensureSchema";
 import { prisma } from "../lib/prisma";
 
 export const healthRouter = Router();
@@ -29,20 +30,12 @@ healthRouter.get("/db", async (_req, res) => {
 
 healthRouter.get("/schema", async (_req, res) => {
   try {
+    await ensureProductionSchema();
     await prisma.room.findFirst({
       where: { isCommunityBacking: false },
       select: { id: true },
     });
-
-    await prisma.roomMediaState.findFirst({
-      select: {
-        id: true,
-        externalSeason: true,
-        externalEpisode: true,
-        externalStartOffsetMinutes: true,
-        externalNotes: true,
-      },
-    });
+    await verifyWatchSchema();
 
     res.json({ status: "ok", schema: "compatible" });
   } catch (error) {
