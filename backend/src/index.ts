@@ -1,10 +1,26 @@
+import { execSync } from "node:child_process";
 import { createServer } from "http";
 import { app } from "./app";
 import { env } from "./config/env";
 import { disconnectRedis } from "./lib/redis";
 import { setupSocket } from "./socket";
 
+function runProductionMigrations(): void {
+  if (env.nodeEnv !== "production") {
+    return;
+  }
+
+  console.log("Production migration kontrolü başlatılıyor...");
+  execSync("npx prisma migrate deploy", {
+    stdio: "inherit",
+    env: process.env,
+  });
+  console.log("Migration kontrolü tamamlandı.");
+}
+
 async function startServer(): Promise<void> {
+  runProductionMigrations();
+
   const httpServer = createServer(app);
 
   await setupSocket(httpServer);
