@@ -94,9 +94,13 @@ export function RegisterForm() {
         />
         <Input
           label={t("auth.fields.handle")}
+          prefix="@"
+          hint={t("auth.fields.handleHint")}
           placeholder={t("auth.fields.handlePlaceholder")}
           value={handle}
-          onChange={(event) => setHandle(event.target.value)}
+          onChange={(event) =>
+            setHandle(event.target.value.replace(/^@+/, "").toLowerCase())
+          }
           required
           autoComplete="username"
         />

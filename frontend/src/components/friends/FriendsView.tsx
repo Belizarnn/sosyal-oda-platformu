@@ -212,8 +212,11 @@ export function FriendsView() {
           <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSendRequest}>
             <Input
               label={t("friends.userHandle")}
+              prefix="@"
               value={handleInput}
-              onChange={(event) => setHandleInput(event.target.value)}
+              onChange={(event) =>
+                setHandleInput(event.target.value.replace(/^@+/, "").toLowerCase())
+              }
               placeholder={t("friends.handlePlaceholder")}
               required
             />

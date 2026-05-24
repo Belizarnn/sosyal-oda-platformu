@@ -151,17 +151,59 @@ Demo kullanıcılar, odalar, mesajlar, arkadaşlıklar, bildirimler ve OPEN rapo
 
 ## Çalıştırma
 
-```bash
-# Backend (geliştirme)
-cd backend && npm run dev
+### Günlük local geliştirme (Windows)
 
-# Backend (production build)
+Proje kökünden **tek komut** — iki ayrı terminal penceresi açar:
+
+```powershell
+cd sosyal-oda-platformu
+.\dev.ps1
+```
+
+| Servis | Adres |
+|--------|--------|
+| Backend | http://localhost:5000 |
+| Frontend | http://localhost:3000 |
+
+Port dolu hatası (`EADDRINUSE`) alırsanız:
+
+```powershell
+.\stop-dev.ps1
+.\dev.ps1
+```
+
+Çift tıkla: `dev.bat`
+
+### Manuel (iki terminal)
+
+```powershell
+# Terminal 1 — Backend
+cd backend
+npm run dev
+
+# Terminal 2 — Frontend
+cd frontend
+npm run dev
+```
+
+### Production (canlı site)
+
+Kod değişikliğini GitHub'a push edin → Vercel (frontend) ve Render (backend) otomatik deploy eder.
+
+| Ortam | Site |
+|-------|------|
+| Canlı | https://sosyal-oda-platformu.vercel.app |
+| API | https://sosyal-oda-platformu.onrender.com |
+
+Local'de çalıştırmanız gerekmez; yalnızca kod yazıp `git push` yeterli.
+
+### Build (production test)
+
+```bash
+# Backend
 cd backend && npm run build && npm run start
 
-# Frontend (geliştirme)
-cd frontend && npm run dev
-
-# Frontend (production build)
+# Frontend
 cd frontend && npm run build && npm run start
 ```
 
