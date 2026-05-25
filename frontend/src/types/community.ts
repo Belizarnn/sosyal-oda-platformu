@@ -22,7 +22,11 @@ export type ChannelType =
   | "VIDEO"
   | "WATCH"
   | "ANNOUNCEMENT"
-  | "PRIVATE";
+  | "PRIVATE"
+  | "READ_ONLY"
+  | "TICKET"
+  | "STATS"
+  | "LOG";
 
 export type ChannelVisibility = "PUBLIC" | "PRIVATE";
 
@@ -78,6 +82,70 @@ export interface CommunityMember {
     presenceStatus: string;
     statusMessage: string | null;
   };
+  roles?: CommunityRole[];
+}
+
+export type RolePermissionsMap = Partial<Record<string, boolean>>;
+
+export interface CommunityRole {
+  id: string;
+  communityId: string;
+  name: string;
+  color: string;
+  iconUrl: string | null;
+  permissions: RolePermissionsMap;
+  position: number;
+  hoist: boolean;
+  mentionable: boolean;
+  isDefault: boolean;
+  isOwnerRole: boolean;
+  systemKey: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityRoleMember {
+  assignmentId: string;
+  memberId: string;
+  userId: string;
+  assignedAt: string;
+  user: CommunityMember["user"];
+}
+
+export interface ChannelPermissionOverride {
+  id: string;
+  channelId: string;
+  targetType: "ROLE" | "MEMBER";
+  targetId: string;
+  allow: RolePermissionsMap;
+  deny: RolePermissionsMap;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRoleInput {
+  name: string;
+  color?: string;
+  iconUrl?: string | null;
+  permissions?: RolePermissionsMap;
+  position?: number;
+  hoist?: boolean;
+  mentionable?: boolean;
+}
+
+export interface UpdateRoleInput extends Partial<CreateRoleInput> {}
+
+export interface ReorderRolesInput {
+  roleIds: string[];
+}
+
+export interface UpdateChannelPermissionsInput {
+  overrides: Array<{
+    targetType: "ROLE" | "MEMBER";
+    targetId: string;
+    allow?: RolePermissionsMap;
+    deny?: RolePermissionsMap;
+  }>;
 }
 
 export interface CommunityDetail {
@@ -90,6 +158,7 @@ export interface CommunityDetail {
   category: CommunityCategory;
   ownerId: string;
   memberCount: number;
+  setupCompleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +170,10 @@ export interface CommunityDetailResponse {
   members: CommunityMember[];
   isMember: boolean;
   currentUserRole: CommunityMemberRole | null;
+  canManageSettings?: boolean;
+  canManageRoles?: boolean;
+  canViewMembers?: boolean;
+  setupCompleted?: boolean;
 }
 
 export interface CommunityListResponse {
@@ -155,4 +228,16 @@ export interface CommunityInvitePreview {
 export interface CreateCommunityInviteInput {
   expiresAt?: string;
   maxUses?: number;
+}
+
+export interface UpdateCommunityInput {
+  name?: string;
+  description?: string;
+  avatarUrl?: string | null;
+  visibility?: CommunityVisibility;
+  category?: CommunityCategory;
+}
+
+export interface UpdateMemberInput {
+  role?: CommunityMemberRole;
 }

@@ -8,6 +8,8 @@ import {
 } from "@/components/communities/ChannelContentRenderer";
 import { CommunityInviteModal } from "@/components/communities/CommunityInviteModal";
 import { CommunityMemberList } from "@/components/communities/CommunityMemberList";
+import { CommunityServerRailCreateHost } from "@/components/communities/CommunityServerRail";
+import { CommunitySettingsModal } from "@/components/communities/CommunitySettingsModal";
 import { CommunitySidebar } from "@/components/communities/CommunitySidebar";
 import { CreateChannelModal } from "@/components/communities/CreateChannelModal";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +50,7 @@ export function CommunityChannelView({ communityId, channelId }: CommunityChanne
   const [membersOpen, setMembersOpen] = useState(false);
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const backingRoomId = channel?.backingRoomId ?? "";
   const isMember = Boolean(community?.isMember);
@@ -104,14 +107,18 @@ export function CommunityChannelView({ communityId, channelId }: CommunityChanne
 
   return (
     <div className="flex app-panel-height overflow-hidden rounded-xl border border-border bg-surface">
+      <CommunityServerRailCreateHost activeCommunityId={communityId} />
+
       <CommunitySidebar
         communityId={communityId}
         communityName={community.community.name}
         channels={community.channels}
         activeChannelId={channelId}
         currentUserRole={community.currentUserRole}
+        canManageSettings={community.canManageSettings}
         onCreateChannel={() => setCreateChannelOpen(true)}
         onOpenInvite={() => setInviteOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
         onToggleMembers={() => setMembersOpen(true)}
         mobileOpen={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}
@@ -165,7 +172,17 @@ export function CommunityChannelView({ communityId, channelId }: CommunityChanne
         communityId={communityId}
         open={createChannelOpen}
         onClose={() => setCreateChannelOpen(false)}
-        onCreated={() => void loadData()}
+        onCreated={(newChannelId) => {
+          void loadData();
+          router.push(`/communities/${communityId}/channels/${newChannelId}`);
+        }}
+      />
+
+      <CommunitySettingsModal
+        communityId={communityId}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onUpdated={() => void loadData()}
       />
 
       <CommunityInviteModal

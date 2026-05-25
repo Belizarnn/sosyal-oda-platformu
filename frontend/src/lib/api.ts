@@ -60,13 +60,29 @@ import type {
   CreateChannelInput,
   CreateCommunityInput,
   CreateCommunityInviteInput,
+  UpdateCommunityInput,
+  UpdateMemberInput,
+  CreateRoleInput,
+  UpdateRoleInput,
+  ReorderRolesInput,
+  UpdateChannelPermissionsInput,
+  CommunityRole,
+  CommunityRoleMember,
+  ChannelPermissionOverride,
   CommunityDetailResponse,
   CommunityFilters,
   CommunityInvite,
   CommunityInvitePreview,
   CommunityListResponse,
   CommunityChannel,
+  CommunityMember,
 } from "@/types/community";
+import type {
+  CommunityBot,
+  CommunityBotType,
+  CommunitySetupState,
+  ChannelTemplateKey,
+} from "@/types/communitySetup";
 import type { DashboardResponse } from "@/types/dashboard";
 import type { ReportInput, ReportResponse } from "@/types/moderation";
 import type {
@@ -1124,6 +1140,31 @@ export function leaveCommunity(communityId: string): Promise<{ message: string }
   return apiRequest(`/communities/${communityId}/leave`, { method: "POST", body: {} });
 }
 
+export function updateCommunity(
+  communityId: string,
+  data: UpdateCommunityInput,
+): Promise<CommunityDetailResponse> {
+  return apiRequest(`/communities/${communityId}`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
+export function deleteCommunity(communityId: string): Promise<{ message: string }> {
+  return apiRequest(`/communities/${communityId}`, { method: "DELETE" });
+}
+
+export function updateCommunityMember(
+  communityId: string,
+  memberId: string,
+  data: UpdateMemberInput,
+): Promise<{ member: CommunityMember }> {
+  return apiRequest(`/communities/${communityId}/members/${memberId}`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
 export function createCommunityChannel(
   communityId: string,
   data: CreateChannelInput,
@@ -1170,6 +1211,173 @@ export function revokeCommunityInvite(
   return apiRequest(`/communities/${communityId}/invites/${inviteId}`, {
     method: "DELETE",
   });
+}
+
+export function listCommunityRoles(
+  communityId: string,
+): Promise<{ roles: CommunityRole[]; canManageRoles: boolean }> {
+  return apiRequest(`/communities/${communityId}/roles`);
+}
+
+export function getCommunityRole(
+  communityId: string,
+  roleId: string,
+): Promise<{ role: CommunityRole; members: CommunityRoleMember[] }> {
+  return apiRequest(`/communities/${communityId}/roles/${roleId}`);
+}
+
+export function createCommunityRole(
+  communityId: string,
+  data: CreateRoleInput,
+): Promise<{ role: CommunityRole }> {
+  return apiRequest(`/communities/${communityId}/roles`, {
+    method: "POST",
+    body: data,
+  });
+}
+
+export function updateCommunityRole(
+  communityId: string,
+  roleId: string,
+  data: UpdateRoleInput,
+): Promise<{ role: CommunityRole }> {
+  return apiRequest(`/communities/${communityId}/roles/${roleId}`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
+export function deleteCommunityRole(
+  communityId: string,
+  roleId: string,
+): Promise<{ message: string }> {
+  return apiRequest(`/communities/${communityId}/roles/${roleId}`, {
+    method: "DELETE",
+  });
+}
+
+export function reorderCommunityRoles(
+  communityId: string,
+  data: ReorderRolesInput,
+): Promise<{ roles: CommunityRole[] }> {
+  return apiRequest(`/communities/${communityId}/roles/reorder`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
+export function assignCommunityMemberRole(
+  communityId: string,
+  memberId: string,
+  roleId: string,
+): Promise<{ assignment: { id: string; memberId: string; roleId: string; assignedAt: string } }> {
+  return apiRequest(`/communities/${communityId}/members/${memberId}/roles/${roleId}`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export function removeCommunityMemberRole(
+  communityId: string,
+  memberId: string,
+  roleId: string,
+): Promise<{ message: string }> {
+  return apiRequest(`/communities/${communityId}/members/${memberId}/roles/${roleId}`, {
+    method: "DELETE",
+  });
+}
+
+export function listCommunityMemberRoles(
+  communityId: string,
+  memberId: string,
+): Promise<{ roles: CommunityRole[] }> {
+  return apiRequest(`/communities/${communityId}/members/${memberId}/roles`);
+}
+
+export function getChannelPermissions(
+  communityId: string,
+  channelId: string,
+): Promise<{ overrides: ChannelPermissionOverride[] }> {
+  return apiRequest(`/communities/${communityId}/channels/${channelId}/permissions`);
+}
+
+export function updateChannelPermissions(
+  communityId: string,
+  channelId: string,
+  data: UpdateChannelPermissionsInput,
+): Promise<{ overrides: ChannelPermissionOverride[] }> {
+  return apiRequest(`/communities/${communityId}/channels/${channelId}/permissions`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
+export function getCommunitySetup(communityId: string): Promise<CommunitySetupState> {
+  return apiRequest(`/communities/${communityId}/setup`);
+}
+
+export function saveSetupChannels(
+  communityId: string,
+  selectedChannels: ChannelTemplateKey[],
+): Promise<CommunitySetupState> {
+  return apiRequest(`/communities/${communityId}/setup/channels`, {
+    method: "POST",
+    body: { selectedChannels },
+  });
+}
+
+export function saveSetupBots(
+  communityId: string,
+  selectedBots: Record<string, boolean>,
+): Promise<CommunitySetupState> {
+  return apiRequest(`/communities/${communityId}/setup/bots`, {
+    method: "POST",
+    body: { selectedBots },
+  });
+}
+
+export function completeCommunitySetup(
+  communityId: string,
+): Promise<CommunityDetailResponse> {
+  return apiRequest(`/communities/${communityId}/setup/complete`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export function listCommunityBots(
+  communityId: string,
+): Promise<{
+  bots: CommunityBot[];
+  definitions: Record<string, { recommended: boolean; defaultSettings: Record<string, unknown> }>;
+  canManageBots: boolean;
+}> {
+  return apiRequest(`/communities/${communityId}/bots`);
+}
+
+export function updateCommunityBot(
+  communityId: string,
+  botType: CommunityBotType,
+  data: { enabled?: boolean; settings?: Record<string, unknown> },
+): Promise<{ bot: CommunityBot }> {
+  return apiRequest(`/communities/${communityId}/bots/${botType}`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
+export function listBotLogs(
+  communityId: string,
+): Promise<{
+  logs: Array<{
+    id: string;
+    botType: CommunityBotType;
+    action: string;
+    metadata: unknown;
+    createdAt: string;
+  }>;
+}> {
+  return apiRequest(`/communities/${communityId}/bot-logs`);
 }
 
 export function getCommunityInvitePreview(code: string): Promise<CommunityInvitePreview> {

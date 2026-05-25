@@ -200,7 +200,23 @@ export async function createRoomMessage(
 
   }
 
+  const backingChannel = await prisma.communityChannel.findFirst({
+    where: { backingRoomId: roomId },
+    select: { communityId: true },
+  });
 
+  if (backingChannel) {
+    const moderation = await import("../../utils/botRuntime/logBot");
+    const check = await moderation.runModerationCheck(
+      backingChannel.communityId,
+      userId,
+      sanitizedContent,
+    );
+
+    if (check.blocked) {
+      throw new AppError(400, check.reason ?? "Mesaj moderasyon tarafından engellendi");
+    }
+  }
 
   const message = await prisma.message.create({
 
@@ -238,6 +254,32 @@ export async function createRoomMessage(
       hasReply: Boolean(replyToMessageId),
     },
   });
+
+  if (backingChannel) {
+    const autoReply = await import("../../utils/botRuntime/logBot");
+    const reply = await autoReply.runAutoReplyCheck(
+      backingChannel.communityId,
+      roomId,
+      sanitizedContent,
+    );
+
+    if (reply) {
+      const community = await prisma.community.findUnique({
+        where: { id: backingChannel.communityId },
+        select: { ownerId: true },
+      });
+
+      if (community) {
+        await prisma.message.create({
+          data: {
+            roomId,
+            senderId: community.ownerId,
+            content: `[YANIT] ${reply}`,
+          },
+        });
+      }
+    }
+  }
 
   return formatMessage(message);
 }

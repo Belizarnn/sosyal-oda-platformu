@@ -6,17 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ApiError, createCommunity } from "@/lib/api";
-import type { CommunityCategory, CommunityVisibility } from "@/types/community";
-
-const CATEGORIES: CommunityCategory[] = [
-  "GENERAL",
-  "FILM",
-  "SERIES",
-  "ANIME",
-  "GAME",
-  "EDUCATION",
-  "FRIENDS",
-];
+import { findDefaultLandingChannel } from "@/lib/communityUi";
+import type { CommunityVisibility } from "@/types/community";
 
 const VISIBILITIES: CommunityVisibility[] = ["PUBLIC", "INVITE_ONLY", "PRIVATE"];
 
@@ -24,9 +15,6 @@ export function CreateCommunityForm() {
   const router = useRouter();
   const { t } = useLanguage();
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [category, setCategory] = useState<CommunityCategory>("GENERAL");
   const [visibility, setVisibility] = useState<CommunityVisibility>("PUBLIC");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,16 +25,10 @@ export function CreateCommunityForm() {
     setError(null);
 
     try {
-      const result = await createCommunity({
-        name,
-        description: description || undefined,
-        avatarUrl: avatarUrl.trim() || undefined,
-        category,
-        visibility,
-      });
-      const firstChannel = result.channels[0];
-      if (firstChannel) {
-        router.push(`/communities/${result.community.id}/channels/${firstChannel.id}`);
+      const result = await createCommunity({ name: name.trim(), visibility });
+      const landing = findDefaultLandingChannel(result.channels);
+      if (landing) {
+        router.push(`/communities/${result.community.id}/channels/${landing.id}`);
       } else {
         router.push(`/communities/${result.community.id}`);
       }
@@ -58,65 +40,46 @@ export function CreateCommunityForm() {
   }
 
   return (
-    <form className="mx-auto flex max-w-lg flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
+    <form className="mx-auto flex max-w-md flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
       <div>
         <h1 className="text-xl font-semibold">{t("communities.create")}</h1>
-        <p className="mt-1 text-sm text-muted">{t("communities.createDesc")}</p>
+        <p className="mt-1 text-sm text-muted">{t("communities.createSimpleDesc")}</p>
       </div>
 
       <Input
         label={t("communities.form.name")}
         value={name}
         onChange={(event) => setName(event.target.value)}
+        placeholder={t("communities.form.namePlaceholder")}
         required
       />
 
-      <Input
-        label={t("communities.form.avatarUrl")}
-        value={avatarUrl}
-        onChange={(event) => setAvatarUrl(event.target.value)}
-        placeholder="https://"
-      />
-
-      <label className="block space-y-1.5">
-        <span className="text-sm text-muted">{t("communities.form.description")}</span>
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          rows={3}
-          className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm outline-none focus:border-accent/50"
-        />
-      </label>
-
-      <label className="block space-y-1.5">
-        <span className="text-sm text-muted">{t("communities.form.category")}</span>
-        <select
-          value={category}
-          onChange={(event) => setCategory(event.target.value as CommunityCategory)}
-          className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm"
-        >
-          {CATEGORIES.map((item) => (
-            <option key={item} value={item}>
-              {t(`communities.categories.${item.toLowerCase()}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="block space-y-1.5">
-        <span className="text-sm text-muted">{t("communities.form.visibility")}</span>
-        <select
-          value={visibility}
-          onChange={(event) => setVisibility(event.target.value as CommunityVisibility)}
-          className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm"
-        >
-          {VISIBILITIES.map((item) => (
-            <option key={item} value={item}>
-              {t(`communities.visibility.${item.toLowerCase()}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className="space-y-2">
+        <legend className="text-sm text-muted">{t("communities.form.visibility")}</legend>
+        {VISIBILITIES.map((item) => (
+          <label
+            key={item}
+            className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface/50 px-3 py-2.5 transition hover:border-accent/30"
+          >
+            <input
+              type="radio"
+              name="visibility"
+              value={item}
+              checked={visibility === item}
+              onChange={() => setVisibility(item)}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-medium">
+                {t(`communities.visibility.${item.toLowerCase()}`)}
+              </span>
+              <span className="block text-xs text-muted">
+                {t(`communities.visibilityHint.${item.toLowerCase()}`)}
+              </span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
 

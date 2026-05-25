@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CommunityCard } from "@/components/communities/CommunityCard";
+import { CreateCommunityModal } from "@/components/communities/CreateCommunityModal";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -12,6 +11,8 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ApiError, getCommunities } from "@/lib/api";
 import type { CommunityListItem } from "@/types/community";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function CommunityExplorer() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export function CommunityExplorer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -46,7 +48,7 @@ export function CommunityExplorer() {
           <h1 className="text-xl font-semibold sm:text-2xl">{t("communities.title")}</h1>
           <p className="mt-1 text-sm text-muted">{t("communities.subtitle")}</p>
         </div>
-        <Button href="/communities/create">{t("communities.create")}</Button>
+        <Button onClick={() => setCreateOpen(true)}>{t("communities.create")}</Button>
       </div>
 
       <Input
@@ -71,7 +73,7 @@ export function CommunityExplorer() {
           title={t("communities.emptyTitle")}
           description={t("communities.emptyDesc")}
           actionLabel={t("communities.create")}
-          href="/communities/create"
+          onAction={() => setCreateOpen(true)}
         />
       ) : null}
 
@@ -92,6 +94,8 @@ export function CommunityExplorer() {
           {t("communities.quickRoomsLink")}
         </Link>
       </p>
+
+      <CreateCommunityModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }

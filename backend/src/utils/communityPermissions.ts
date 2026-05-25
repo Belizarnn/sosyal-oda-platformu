@@ -9,8 +9,15 @@ import {
   type CommunityChannel,
   type CommunityMember,
 } from "@prisma/client";
+import { LEGACY_PERMISSION_MAP } from "../constants/communityPermissionKeys";
 import { prisma } from "../lib/prisma";
 import { AppError } from "./asyncHandler";
+import {
+  ensureDefaultRoles,
+  getEffectivePermissions,
+  hasChannelPermission,
+  hasServerPermission,
+} from "./communityRoleEngine";
 
 export type CommunityPermission =
   | "community.update"
@@ -130,10 +137,20 @@ export async function getCommunityMemberOrNull(communityId: string, userId: stri
   });
 }
 
-export function assertCommunityPermission(
+export async function assertCommunityPermission(
   member: CommunityMember,
   permission: CommunityPermission,
 ) {
+  const mapped = LEGACY_PERMISSION_MAP[permission];
+
+  if (mapped) {
+    await ensureDefaultRoles(member.communityId);
+    const allowed = await hasServerPermission(member.userId, member.communityId, mapped);
+    if (allowed) {
+      return;
+    }
+  }
+
   if (!hasCommunityPermission(member.role, permission)) {
     throw new AppError(403, "Bu işlem için yetkiniz yok");
   }
@@ -210,6 +227,34 @@ export function defaultPermissionsForChannelType(type: ChannelType): Omit<
         minRoleVoice: CommunityMemberRole.MEMBER,
         minRoleVideo: CommunityMemberRole.MEMBER,
       };
+    case ChannelType.READ_ONLY:
+      return {
+        minRoleView: CommunityMemberRole.GUEST,
+        minRoleSend: CommunityMemberRole.ADMIN,
+        minRoleWatchStart: CommunityMemberRole.ADMIN,
+        minRoleWatchControl: CommunityMemberRole.ADMIN,
+        minRoleVoice: CommunityMemberRole.ADMIN,
+        minRoleVideo: CommunityMemberRole.ADMIN,
+      };
+    case ChannelType.TICKET:
+      return {
+        minRoleView: CommunityMemberRole.MEMBER,
+        minRoleSend: CommunityMemberRole.MEMBER,
+        minRoleWatchStart: CommunityMemberRole.MODERATOR,
+        minRoleWatchControl: CommunityMemberRole.MODERATOR,
+        minRoleVoice: CommunityMemberRole.MEMBER,
+        minRoleVideo: CommunityMemberRole.MEMBER,
+      };
+    case ChannelType.STATS:
+    case ChannelType.LOG:
+      return {
+        minRoleView: CommunityMemberRole.MEMBER,
+        minRoleSend: CommunityMemberRole.MODERATOR,
+        minRoleWatchStart: CommunityMemberRole.MODERATOR,
+        minRoleWatchControl: CommunityMemberRole.MODERATOR,
+        minRoleVoice: CommunityMemberRole.MODERATOR,
+        minRoleVideo: CommunityMemberRole.MODERATOR,
+      };
     default:
       return {
         minRoleView: CommunityMemberRole.GUEST,
@@ -225,7 +270,30 @@ export function defaultPermissionsForChannelType(type: ChannelType): Omit<
 export async function canViewChannel(
   channel: CommunityChannel & { permissions: ChannelPermission | null },
   member: CommunityMember | null,
+  userId?: string,
 ): Promise<boolean> {
+  if (userId) {
+    await ensureDefaultRoles(channel.communityId);
+
+    const canView = await hasChannelPermission(userId, channel.id, "channel.view");
+    if (!canView) {
+      return false;
+    }
+
+    if (channel.visibility === ChannelVisibility.PRIVATE) {
+      const canViewPrivate = await hasChannelPermission(
+        userId,
+        channel.id,
+        "channel.view_private",
+      );
+      if (!canViewPrivate) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   if (channel.visibility === ChannelVisibility.PRIVATE) {
     if (!member || member.leftAt !== null || member.isBanned) {
       return false;
@@ -245,8 +313,16 @@ export async function assertCanSendChannelMessage(
   channel: CommunityChannel & { permissions: ChannelPermission | null },
   member: CommunityMember,
 ) {
+  await ensureDefaultRoles(channel.communityId);
+
+  const canSend = await hasChannelPermission(member.userId, channel.id, "text.send");
+
+  if (canSend) {
+    return;
+  }
+
   if (channel.type === ChannelType.ANNOUNCEMENT) {
-    assertCommunityPermission(member, "announcement.send");
+    await assertCommunityPermission(member, "announcement.send");
     return;
   }
 
@@ -311,4 +387,12 @@ export function canManageCommunityMember(
   }
 
   return ROLE_RANK[actor.role] > ROLE_RANK[target.role];
+}
+
+export async function getUserEffectivePermissions(
+  userId: string,
+  communityId: string,
+  channelId?: string,
+) {
+  return getEffectivePermissions(userId, communityId, channelId);
 }

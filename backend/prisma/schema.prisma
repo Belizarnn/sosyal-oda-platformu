@@ -67,6 +67,10 @@ enum ChannelType {
   WATCH
   ANNOUNCEMENT
   PRIVATE
+  READ_ONLY
+  TICKET
+  STATS
+  LOG
 }
 
 enum ChannelVisibility {
@@ -242,6 +246,11 @@ model User {
   communityMembers         CommunityMember[]
   communityChannelsCreated CommunityChannel[]    @relation("CommunityChannelCreator")
   communityInvitesCreated  CommunityInvite[]     @relation("CommunityInviteCreator")
+  communityRoleAssignments CommunityMemberRoleAssignment[] @relation("CommunityRoleAssignedBy")
+  ticketsOpened            CommunityTicket[]     @relation("CommunityTicketOpenedBy")
+  giveawaysCreated         CommunityGiveaway[]   @relation("CommunityGiveawayCreator")
+  inviteStatsAsInviter     InviteStat[]          @relation("InviteStatInviter")
+  inviteStatsAsUsedBy      InviteStat[]          @relation("InviteStatUsedBy")
 
   @@index([presenceStatus])
 }
@@ -381,22 +390,61 @@ model Room {
   @@index([currentUserCount])
 }
 
-model Community {
-  id          String              @id @default(cuid())
-  name        String
-  slug        String              @unique
-  description String?
-  avatarUrl   String?
-  visibility  CommunityVisibility @default(PUBLIC)
-  category    CommunityCategory   @default(GENERAL)
-  ownerId     String
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+enum CommunityBotType {
+  MODERATION
+  LOG
+  WELCOME
+  TICKET
+  REACTION_ROLE
+  INVITE
+  GIVEAWAY
+  STATS
+  AUTO_REPLY
+  WEBHOOK
+  MUSIC
+  FUN
+  SECURITY
+}
 
-  owner    User              @relation("CommunityOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members  CommunityMember[]
-  channels CommunityChannel[]
-  invites  CommunityInvite[]
+enum CommunityTicketStatus {
+  OPEN
+  CLOSED
+}
+
+enum CommunityGiveawayStatus {
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+model Community {
+  id             String              @id @default(cuid())
+  name           String
+  slug           String              @unique
+  description    String?
+  avatarUrl      String?
+  visibility     CommunityVisibility @default(PUBLIC)
+  category       CommunityCategory   @default(GENERAL)
+  ownerId        String
+  setupCompleted Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  owner         User                    @relation("CommunityOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       CommunityMember[]
+  channels      CommunityChannel[]
+  invites       CommunityInvite[]
+  roles         CommunityRole[]
+  setupTemplate CommunitySetupTemplate?
+  bots          CommunityBot[]
+  botLogs       BotLog[]
+  autoReplies   AutoReplyRule[]
+  moderationRules ModerationRule[]
+  webhooks      WebhookIntegration[]
+  reactionRoles ReactionRoleMessage[]
+  tickets       CommunityTicket[]
+  giveaways     CommunityGiveaway[]
+  inviteStats   InviteStat[]
 
   @@index([visibility])
   @@index([category])
@@ -416,6 +464,7 @@ model CommunityMember {
 
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleAssignments CommunityMemberRoleAssignment[]
 
   @@unique([communityId, userId])
   @@index([communityId])
@@ -441,6 +490,7 @@ model CommunityChannel {
   creator     User               @relation("CommunityChannelCreator", fields: [createdById], references: [id], onDelete: Cascade)
   backingRoom Room?              @relation(fields: [backingRoomId], references: [id], onDelete: SetNull)
   permissions ChannelPermission?
+  permissionOverrides ChannelPermissionOverride[]
 
   @@unique([communityId, slug])
   @@index([communityId, position])
@@ -458,6 +508,221 @@ model ChannelPermission {
   minRoleVideo        CommunityMemberRole @default(MEMBER)
 
   channel CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+enum ChannelPermissionTargetType {
+  ROLE
+  MEMBER
+}
+
+model CommunityRole {
+  id          String   @id @default(cuid())
+  communityId String
+  name        String
+  color       String   @default("#99AAB5")
+  iconUrl     String?
+  permissions Json     @default("{}")
+  position    Int      @default(0)
+  hoist       Boolean  @default(false)
+  mentionable Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  isOwnerRole Boolean  @default(false)
+  systemKey   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community         Community                       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  memberAssignments CommunityMemberRoleAssignment[]
+
+  @@unique([communityId, name])
+  @@index([communityId, position])
+}
+
+model CommunityMemberRoleAssignment {
+  id           String   @id @default(cuid())
+  memberId     String
+  roleId       String
+  assignedAt   DateTime @default(now())
+  assignedById String?
+
+  member     CommunityMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  role       CommunityRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy User?           @relation("CommunityRoleAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([memberId, roleId])
+  @@index([memberId])
+  @@index([roleId])
+}
+
+model ChannelPermissionOverride {
+  id         String                      @id @default(cuid())
+  channelId  String
+  targetType ChannelPermissionTargetType
+  targetId   String
+  allow      Json                        @default("{}")
+  deny       Json                        @default("{}")
+  createdAt  DateTime                    @default(now())
+  updatedAt  DateTime                    @updatedAt
+
+  channel CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, targetType, targetId])
+  @@index([channelId])
+}
+
+model CommunitySetupTemplate {
+  id               String    @id @default(cuid())
+  communityId      String    @unique
+  selectedChannels Json      @default("[]")
+  selectedBots     Json      @default("{}")
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+model CommunityBot {
+  id          String           @id @default(cuid())
+  communityId String
+  type        CommunityBotType
+  enabled     Boolean          @default(false)
+  settings    Json             @default("{}")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, type])
+  @@index([communityId, enabled])
+}
+
+model BotLog {
+  id          String           @id @default(cuid())
+  communityId String
+  botType     CommunityBotType
+  action      String
+  metadata    Json             @default("{}")
+  createdAt   DateTime         @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([communityId, createdAt])
+  @@index([botType])
+}
+
+model AutoReplyRule {
+  id          String   @id @default(cuid())
+  communityId String
+  trigger     String
+  response    String
+  channelIds  Json     @default("[]")
+  roleIds     Json     @default("[]")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([communityId, enabled])
+}
+
+model ModerationRule {
+  id          String   @id @default(cuid())
+  communityId String
+  type        String
+  enabled     Boolean  @default(true)
+  settings    Json     @default("{}")
+  action      String   @default("delete")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, type])
+}
+
+model WebhookIntegration {
+  id          String   @id @default(cuid())
+  communityId String
+  channelId   String
+  name        String
+  avatarUrl   String?
+  secretToken String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([communityId])
+  @@index([secretToken])
+}
+
+model ReactionRoleMessage {
+  id          String   @id @default(cuid())
+  communityId String
+  channelId   String
+  messageId   String?
+  title       String
+  description String?
+  items       Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@index([communityId])
+}
+
+model CommunityTicket {
+  id             String                @id @default(cuid())
+  communityId    String
+  channelId      String?
+  openedById     String
+  assignedRoleId String?
+  type           String
+  status         CommunityTicketStatus @default(OPEN)
+  createdAt      DateTime              @default(now())
+  closedAt       DateTime?
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  openedBy  User      @relation("CommunityTicketOpenedBy", fields: [openedById], references: [id], onDelete: Cascade)
+
+  @@index([communityId, status])
+}
+
+model CommunityGiveaway {
+  id          String                  @id @default(cuid())
+  communityId String
+  channelId   String
+  title       String
+  prize       String
+  winnerCount Int                     @default(1)
+  endsAt      DateTime
+  status      CommunityGiveawayStatus @default(ACTIVE)
+  createdById String
+  createdAt   DateTime                @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("CommunityGiveawayCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([communityId, status])
+}
+
+model InviteStat {
+  id          String   @id @default(cuid())
+  communityId String
+  inviterId   String
+  inviteCode  String
+  usedById    String
+  createdAt   DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  inviter   User      @relation("InviteStatInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  usedBy    User      @relation("InviteStatUsedBy", fields: [usedById], references: [id], onDelete: Cascade)
+
+  @@index([communityId, inviterId])
 }
 
 model CommunityInvite {

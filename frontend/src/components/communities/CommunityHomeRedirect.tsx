@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ApiError, getCommunityById } from "@/lib/api";
+import { findDefaultLandingChannel } from "@/lib/communityUi";
 
 interface CommunityHomeRedirectProps {
   communityId: string;
@@ -18,9 +19,9 @@ export function CommunityHomeRedirect({ communityId }: CommunityHomeRedirectProp
     async function redirect() {
       try {
         const response = await getCommunityById(communityId);
-        const first = response.channels[0];
-        if (first) {
-          router.replace(`/communities/${communityId}/channels/${first.id}`);
+        const landing = findDefaultLandingChannel(response.channels);
+        if (landing) {
+          router.replace(`/communities/${communityId}/channels/${landing.id}`);
         }
       } catch (err) {
         if (err instanceof ApiError) {

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { CreateCommunityForm } from "@/components/communities/CreateCommunityForm";
+import { CreateServerWizard } from "@/components/communities/CreateServerWizard";
 
 export const metadata: Metadata = {
-  title: "Topluluk Oluştur",
+  title: "Sunucu Oluştur",
 };
 
 export default function CreateCommunityPage() {
-  return <CreateCommunityForm />;
+  return <CreateServerWizard />;
 }

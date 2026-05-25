@@ -30,7 +30,17 @@ import {
   hasCommunityRoleAtLeast,
   mapCommunityRoleToRoomRole,
   canManageCommunityMember,
+  getUserEffectivePermissions,
 } from "../../utils/communityPermissions";
+import {
+  assignDefaultMemberRole,
+  ensureDefaultRoles,
+  hasServerPermission,
+} from "../../utils/communityRoleEngine";
+import {
+  DEFAULT_SELECTED_BOTS,
+  DEFAULT_SELECTED_CHANNELS,
+} from "../../constants/communitySetup";
 import type {
   CreateChannelInput,
   CreateCommunityInput,
@@ -47,7 +57,7 @@ const DEFAULT_CHANNELS: Array<{
   slug: string;
   type: ChannelType;
 }> = [
-  { name: "genel-sohbet", slug: "genel-sohbet", type: ChannelType.TEXT },
+  { name: "genel", slug: "genel", type: ChannelType.TEXT },
   { name: "birlikte-izle", slug: "birlikte-izle", type: ChannelType.WATCH },
   { name: "sesli-sohbet", slug: "sesli-sohbet", type: ChannelType.VOICE },
   { name: "duyurular", slug: "duyurular", type: ChannelType.ANNOUNCEMENT },
@@ -260,9 +270,12 @@ export async function createCommunityChannelInternal(
   userId: string,
   input: CreateChannelInput,
   position?: number,
+  skipPermissionCheck = false,
 ) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "channel.create");
+  if (!skipPermissionCheck) {
+    await assertCommunityPermission(member, "channel.create");
+  }
 
   const community = await prisma.community.findUnique({ where: { id: communityId } });
 
@@ -444,19 +457,18 @@ export async function createCommunity(ownerId: string, input: CreateCommunityInp
     return created;
   });
 
-  for (let index = 0; index < DEFAULT_CHANNELS.length; index += 1) {
-    const template = DEFAULT_CHANNELS[index];
-    await createCommunityChannelInternal(
-      community.id,
-      ownerId,
-      {
-        name: template.name,
-        type: template.type,
-        visibility: ChannelVisibility.PUBLIC,
-      },
-      index,
-    );
-  }
+  await ensureDefaultRoles(community.id);
+
+  await prisma.communitySetupTemplate.create({
+    data: {
+      communityId: community.id,
+      selectedChannels: DEFAULT_SELECTED_CHANNELS,
+      selectedBots: DEFAULT_SELECTED_BOTS,
+    },
+  });
+
+  const { initializeCommunityBots } = await import("./communityBot.service");
+  await initializeCommunityBots(community.id);
 
   return getCommunityById(community.id, ownerId);
 }
@@ -506,10 +518,20 @@ export async function getCommunityById(communityId: string, userId?: string) {
   const visibleChannels = [];
 
   for (const channel of community.channels) {
-    if (await canViewChannel(channel, activeMembership)) {
+    if (await canViewChannel(channel, activeMembership, userId)) {
       visibleChannels.push(formatChannel(channel));
     }
   }
+
+  const canManageSettings = userId
+    ? await hasServerPermission(userId, communityId, "server.edit")
+    : false;
+  const canManageRoles = userId
+    ? await hasServerPermission(userId, communityId, "server.manage_roles")
+    : false;
+  const canViewMembers = userId
+    ? await hasServerPermission(userId, communityId, "server.view_members")
+    : false;
 
   return {
     community: {
@@ -522,6 +544,7 @@ export async function getCommunityById(communityId: string, userId?: string) {
       category: community.category,
       ownerId: community.ownerId,
       memberCount: community._count.members,
+      setupCompleted: community.setupCompleted,
       createdAt: community.createdAt.toISOString(),
       updatedAt: community.updatedAt.toISOString(),
     },
@@ -536,6 +559,9 @@ export async function getCommunityById(communityId: string, userId?: string) {
     })),
     isMember: Boolean(activeMembership),
     currentUserRole: activeMembership?.role ?? null,
+    canManageSettings,
+    canManageRoles,
+    canViewMembers,
   };
 }
 
@@ -545,7 +571,7 @@ export async function updateCommunity(
   input: UpdateCommunityInput,
 ) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "community.update");
+  await assertCommunityPermission(member, "community.update");
 
   const updated = await prisma.community.update({
     where: { id: communityId },
@@ -571,7 +597,7 @@ export async function updateCommunity(
 
 export async function deleteCommunity(communityId: string, userId: string) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "community.delete");
+  await assertCommunityPermission(member, "community.delete");
 
   await prisma.community.delete({ where: { id: communityId } });
 
@@ -595,9 +621,11 @@ export async function joinCommunity(communityId: string, userId: string) {
     throw new AppError(403, "Bu topluluktan banlandınız");
   }
 
+  let memberId: string;
+
   await prisma.$transaction(async (tx) => {
     if (existing) {
-      await tx.communityMember.update({
+      const updated = await tx.communityMember.update({
         where: { id: existing.id },
         data: {
           leftAt: null,
@@ -607,16 +635,30 @@ export async function joinCommunity(communityId: string, userId: string) {
               : CommunityMemberRole.MEMBER,
         },
       });
+      memberId = updated.id;
     } else {
-      await tx.communityMember.create({
+      const created = await tx.communityMember.create({
         data: {
           communityId,
           userId,
           role: CommunityMemberRole.MEMBER,
         },
       });
+      memberId = created.id;
     }
   });
+
+  await assignDefaultMemberRole(communityId, memberId!, CommunityMemberRole.MEMBER);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
+
+  if (user && community.setupCompleted) {
+    const { handleMemberJoinedWelcome } = await import("../../utils/botRuntime/welcomeBot");
+    await handleMemberJoinedWelcome(communityId, memberId!, userId, user.username);
+  }
 
   const channels = await prisma.communityChannel.findMany({
     where: { communityId },
@@ -703,7 +745,7 @@ export async function updateCommunityMember(
   input: UpdateMemberInput,
 ) {
   const actor = await getActiveCommunityMember(communityId, actorUserId);
-  assertCommunityPermission(actor, "member.kick");
+  await assertCommunityPermission(actor, "member.kick");
 
   const target = await prisma.communityMember.findFirst({
     where: { id: memberId, communityId },
@@ -729,6 +771,32 @@ export async function updateCommunityMember(
     include: { user: { select: publicUserSelect } },
   });
 
+  if (input.role) {
+    await ensureDefaultRoles(communityId);
+    const systemRole = await prisma.communityRole.findFirst({
+      where: { communityId, systemKey: input.role },
+    });
+
+    if (systemRole && !systemRole.isOwnerRole) {
+      await prisma.communityMemberRoleAssignment.upsert({
+        where: {
+          memberId_roleId: {
+            memberId: target.id,
+            roleId: systemRole.id,
+          },
+        },
+        create: {
+          memberId: target.id,
+          roleId: systemRole.id,
+          assignedById: actorUserId,
+        },
+        update: {
+          assignedById: actorUserId,
+        },
+      });
+    }
+  }
+
   return {
     member: {
       id: updated.id,
@@ -746,7 +814,7 @@ export async function removeCommunityMember(
   memberId: string,
 ) {
   const actor = await getActiveCommunityMember(communityId, actorUserId);
-  assertCommunityPermission(actor, "member.kick");
+  await assertCommunityPermission(actor, "member.kick");
 
   const target = await prisma.communityMember.findFirst({
     where: { id: memberId, communityId },
@@ -816,7 +884,7 @@ export async function updateCommunityChannel(
   input: UpdateChannelInput,
 ) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "channel.update");
+  await assertCommunityPermission(member, "channel.update");
 
   const existing = await prisma.communityChannel.findFirst({
     where: { id: channelId, communityId },
@@ -863,7 +931,7 @@ export async function deleteCommunityChannel(
   userId: string,
 ) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "channel.delete");
+  await assertCommunityPermission(member, "channel.delete");
 
   const channel = await prisma.communityChannel.findFirst({
     where: { id: channelId, communityId },
@@ -884,7 +952,7 @@ export async function createCommunityInvite(
   input: CreateCommunityInviteInput,
 ) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "member.invite");
+  await assertCommunityPermission(member, "member.invite");
 
   const code = await createUniqueInviteCode();
 
@@ -913,7 +981,7 @@ export async function createCommunityInvite(
 
 export async function listCommunityInvites(communityId: string, userId: string) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "member.invite");
+  await assertCommunityPermission(member, "member.invite");
 
   const invites = await prisma.communityInvite.findMany({
     where: { communityId },
@@ -939,7 +1007,7 @@ export async function revokeCommunityInvite(
   userId: string,
 ) {
   const member = await getActiveCommunityMember(communityId, userId);
-  assertCommunityPermission(member, "member.invite");
+  await assertCommunityPermission(member, "member.invite");
 
   const invite = await prisma.communityInvite.findFirst({
     where: { id: inviteId, communityId },

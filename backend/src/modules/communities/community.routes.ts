@@ -2,6 +2,8 @@ import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { asyncHandler } from "../../utils/asyncHandler";
 import * as communityController from "./community.controller";
+import * as communityRoleController from "./communityRole.controller";
+import * as communitySetupController from "./communitySetup.controller";
 
 export const communityRouter = Router();
 export const communityInviteRouter = Router();
@@ -75,6 +77,106 @@ communityRouter.delete(
   "/:communityId/channels/:channelId",
   authMiddleware,
   asyncHandler(communityController.deleteCommunityChannel),
+);
+
+communityRouter.get(
+  "/:communityId/roles",
+  authMiddleware,
+  asyncHandler(communityRoleController.listCommunityRoles),
+);
+communityRouter.post(
+  "/:communityId/roles",
+  authMiddleware,
+  asyncHandler(communityRoleController.createCommunityRole),
+);
+communityRouter.patch(
+  "/:communityId/roles/reorder",
+  authMiddleware,
+  asyncHandler(communityRoleController.reorderCommunityRoles),
+);
+communityRouter.get(
+  "/:communityId/roles/:roleId",
+  authMiddleware,
+  asyncHandler(communityRoleController.getCommunityRoleById),
+);
+communityRouter.patch(
+  "/:communityId/roles/:roleId",
+  authMiddleware,
+  asyncHandler(communityRoleController.updateCommunityRole),
+);
+communityRouter.delete(
+  "/:communityId/roles/:roleId",
+  authMiddleware,
+  asyncHandler(communityRoleController.deleteCommunityRole),
+);
+
+communityRouter.get(
+  "/:communityId/members/:memberId/roles",
+  authMiddleware,
+  asyncHandler(communityRoleController.listMemberRoles),
+);
+communityRouter.post(
+  "/:communityId/members/:memberId/roles/:roleId",
+  authMiddleware,
+  asyncHandler(communityRoleController.assignRoleToMember),
+);
+communityRouter.delete(
+  "/:communityId/members/:memberId/roles/:roleId",
+  authMiddleware,
+  asyncHandler(communityRoleController.removeRoleFromMember),
+);
+
+communityRouter.get(
+  "/:communityId/channels/:channelId/permissions",
+  authMiddleware,
+  asyncHandler(communityRoleController.getChannelPermissions),
+);
+communityRouter.patch(
+  "/:communityId/channels/:channelId/permissions",
+  authMiddleware,
+  asyncHandler(communityRoleController.updateChannelPermissions),
+);
+
+communityRouter.get(
+  "/:communityId/setup",
+  authMiddleware,
+  asyncHandler(communitySetupController.getCommunitySetup),
+);
+communityRouter.post(
+  "/:communityId/setup/channels",
+  authMiddleware,
+  asyncHandler(communitySetupController.saveSetupChannels),
+);
+communityRouter.post(
+  "/:communityId/setup/bots",
+  authMiddleware,
+  asyncHandler(communitySetupController.saveSetupBots),
+);
+communityRouter.post(
+  "/:communityId/setup/complete",
+  authMiddleware,
+  asyncHandler(communitySetupController.completeCommunitySetup),
+);
+
+communityRouter.get(
+  "/:communityId/bots",
+  authMiddleware,
+  asyncHandler(communitySetupController.listCommunityBots),
+);
+communityRouter.patch(
+  "/:communityId/bots/:botType",
+  authMiddleware,
+  asyncHandler(communitySetupController.updateCommunityBot),
+);
+communityRouter.get(
+  "/:communityId/bots/:botType/settings",
+  authMiddleware,
+  asyncHandler(communitySetupController.getCommunityBotSettings),
+);
+communityRouter.get(
+  "/:communityId/bot-logs",
+  authMiddleware,
+  asyncHandler(communitySetupController.listBotLogs),
 );
 
 communityRouter.get(
