@@ -459,12 +459,14 @@ export async function createCommunity(ownerId: string, input: CreateCommunityInp
 
   await ensureDefaultRoles(community.id);
 
-  await prisma.communitySetupTemplate.create({
-    data: {
+  await prisma.communitySetupTemplate.upsert({
+    where: { communityId: community.id },
+    create: {
       communityId: community.id,
       selectedChannels: DEFAULT_SELECTED_CHANNELS,
       selectedBots: DEFAULT_SELECTED_BOTS,
     },
+    update: {},
   });
 
   const { initializeCommunityBots } = await import("./communityBot.service");

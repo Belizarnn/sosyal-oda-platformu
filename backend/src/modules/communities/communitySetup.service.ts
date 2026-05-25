@@ -4,6 +4,7 @@ import {
   CommunityBotType,
   CommunityMemberRole,
 } from "@prisma/client";
+import { ensureProductionSchema } from "../../lib/ensureSchema";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/asyncHandler";
 import {
@@ -73,6 +74,7 @@ export async function saveSetupChannels(
   userId: string,
   selectedChannels: ChannelTemplateKey[],
 ) {
+  await ensureProductionSchema();
   await assertCommunityOwner(communityId, userId);
 
   const community = await prisma.community.findUnique({ where: { id: communityId } });

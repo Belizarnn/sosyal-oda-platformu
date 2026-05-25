@@ -596,6 +596,7 @@
   "states.error.inviteInvalid": "Invitation is invalid",
   "states.error.reportNotFound": "Report not found",
   "states.error.summaryLoadFailed": "Summary could not be loaded",
+  "states.error.saveFailed": "Could not save. Please try again.",
   "friends.title": "Friends",
   "friends.subtitle": "Manage your friends, accept or reject requests.",
   "friends.sendRequest": "Send Request",

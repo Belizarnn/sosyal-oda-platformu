@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { env } from "../config/env";
-import { ensureProductionSchema, verifyWatchSchema } from "../lib/ensureSchema";
+import {
+  ensureProductionSchema,
+  verifyCommunitySetupSchema,
+  verifyWatchSchema,
+} from "../lib/ensureSchema";
 import { prisma } from "../lib/prisma";
 
 export const healthRouter = Router();
@@ -36,6 +40,7 @@ healthRouter.get("/schema", async (_req, res) => {
       select: { id: true },
     });
     await verifyWatchSchema();
+    await verifyCommunitySetupSchema();
 
     res.json({ status: "ok", schema: "compatible" });
   } catch (error) {

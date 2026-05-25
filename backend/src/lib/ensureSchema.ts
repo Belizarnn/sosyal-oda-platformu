@@ -47,7 +47,76 @@ const SCHEMA_REPAIRS = [
     CONSTRAINT "ChannelPermissionOverride_pkey" PRIMARY KEY ("id")
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "ChannelPermissionOverride_channelId_targetType_targetId_key" ON "ChannelPermissionOverride"("channelId", "targetType", "targetId")`,
+  `ALTER TABLE "Community" ADD COLUMN IF NOT EXISTS "setupCompleted" BOOLEAN NOT NULL DEFAULT false`,
+  `DO $$ BEGIN CREATE TYPE "CommunityBotType" AS ENUM ('MODERATION', 'LOG', 'WELCOME', 'TICKET', 'REACTION_ROLE', 'INVITE', 'GIVEAWAY', 'STATS', 'AUTO_REPLY', 'WEBHOOK', 'MUSIC', 'FUN', 'SECURITY'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `DO $$ BEGIN CREATE TYPE "CommunityTicketStatus" AS ENUM ('OPEN', 'CLOSED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `DO $$ BEGIN CREATE TYPE "CommunityGiveawayStatus" AS ENUM ('ACTIVE', 'ENDED', 'CANCELLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `CREATE TABLE IF NOT EXISTS "CommunitySetupTemplate" (
+    "id" TEXT NOT NULL,
+    "communityId" TEXT NOT NULL,
+    "selectedChannels" JSONB NOT NULL DEFAULT '[]',
+    "selectedBots" JSONB NOT NULL DEFAULT '{}',
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "CommunitySetupTemplate_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "CommunitySetupTemplate_communityId_key" ON "CommunitySetupTemplate"("communityId")`,
+  `CREATE TABLE IF NOT EXISTS "CommunityBot" (
+    "id" TEXT NOT NULL,
+    "communityId" TEXT NOT NULL,
+    "type" "CommunityBotType" NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT false,
+    "settings" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "CommunityBot_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "CommunityBot_communityId_type_key" ON "CommunityBot"("communityId", "type")`,
+  `CREATE INDEX IF NOT EXISTS "CommunityBot_communityId_enabled_idx" ON "CommunityBot"("communityId", "enabled")`,
+  `CREATE TABLE IF NOT EXISTS "BotLog" (
+    "id" TEXT NOT NULL,
+    "communityId" TEXT NOT NULL,
+    "botType" "CommunityBotType" NOT NULL,
+    "action" TEXT NOT NULL,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "BotLog_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "BotLog_communityId_createdAt_idx" ON "BotLog"("communityId", "createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "BotLog_botType_idx" ON "BotLog"("botType")`,
+  `DO $$ BEGIN ALTER TABLE "CommunitySetupTemplate" ADD CONSTRAINT "CommunitySetupTemplate_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "Community"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `DO $$ BEGIN ALTER TABLE "CommunityBot" ADD CONSTRAINT "CommunityBot_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "Community"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+  `DO $$ BEGIN ALTER TABLE "BotLog" ADD CONSTRAINT "BotLog_communityId_fkey" FOREIGN KEY ("communityId") REFERENCES "Community"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
 ] as const;
+
+const CHANNEL_TYPE_VALUES = ["READ_ONLY", "TICKET", "STATS", "LOG"] as const;
+
+async function ensureEnumLabel(typeName: string, label: string): Promise<void> {
+  const rows = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_enum e
+      JOIN pg_type t ON e.enumtypid = t.oid
+      WHERE t.typname = ${typeName}
+        AND e.enumlabel = ${label}
+    ) AS "exists"
+  `;
+
+  if (rows[0]?.exists) {
+    return;
+  }
+
+  await prisma.$executeRawUnsafe(
+    `ALTER TYPE "${typeName}" ADD VALUE '${label}'`,
+  );
+}
+
+async function ensureChannelTypeEnumValues(): Promise<void> {
+  for (const value of CHANNEL_TYPE_VALUES) {
+    await ensureEnumLabel("ChannelType", value);
+  }
+}
 
 async function ensureMediaModeEnumValue(): Promise<void> {
   const rows = await prisma.$queryRaw<Array<{ exists: boolean }>>`
@@ -75,6 +144,13 @@ export async function ensureProductionSchema(): Promise<void> {
   }
 
   await ensureMediaModeEnumValue();
+  await ensureChannelTypeEnumValues();
+}
+
+export async function verifyCommunitySetupSchema(): Promise<void> {
+  await prisma.communitySetupTemplate.findFirst({
+    select: { id: true },
+  });
 }
 
 export async function verifyWatchSchema(): Promise<void> {
